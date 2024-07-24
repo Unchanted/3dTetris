@@ -6,18 +6,18 @@ var gl;
 var sizeScale = 1;
 var objects = []
 var mainObject = null;
-var mainObjectIndex = initObjects.length-1;
+var mainObjectIndex = initObjects.length-1; 
 var GroundObject;
 var cameraTheta = [0,0,0];
 var camera_theta_loc;
 var idle_rotation_vel = 1.0;
-const gravity_speed_init = 0.005;
+const gravity_speed_init = 0.001;
 var gravity_speed = gravity_speed_init;
 var direction = 1;
 var move_scale =edge_length
 var rotate_scale = 4;
 var epsilon = 0.01
-var GROUND_Y = -0.9 + epsilon;
+var GROUND_Y = -0.9+epsilon;
 var cameraSpeed = 4;
 const directions = {
 	"RIGHT"	: [ 0,1],
@@ -29,7 +29,6 @@ const directions = {
 
 }
 var program;
-
 
 class Object{
 	constructor(vertex,vertexColors,indices){
@@ -62,23 +61,37 @@ class Object{
 	
 }
 
+function arrayEquals(a, b) {
+  return Array.isArray(a) &&
+    Array.isArray(b) &&
+    a.length === b.length &&
+    a.every((val, index) => val === b[index]);
+}
 
-function controlCollusion(){
+function lineClsn(line1,line2){
+	return line1[0] <= line2[1]+epsilon && line1[1]+epsilon >= line2[0];
+}
+
+function boxClsn(){
+	const [X,Y,Z] = getMinMax(objects[mainObjectIndex]);
 	for(var i=0;i<objects.length-1;i++){
-		for(var j=0;j<objects[i].vertices.length;j++)
-			for(var k=0;k<objects[objects.length-1].vertices.length;k++)
-				if(objects[i].vertices[j].equals(objects[objects.length-1].vertices[k]))
-					return true;
+			let [x,y,z] = getMinMax(objects[i]);
+			
+			if(lineClsn(X,x) && lineClsn(Y,y) && lineClsn(Z,z))
+				return true;
+				
 	}
 	return false;
 	
 }
+
 function newAsset(){
 	objects.push(newAsset);
 	
 	mainObjectIndex = objects.length-1;
 	
 }
+
 function buffer(obj){
 	
     var iBuffer = gl.createBuffer();
@@ -104,9 +117,11 @@ function buffer(obj){
 	if(obj.getThetaLoc()==null)
 		obj.setThetaLoc(gl.getUniformLocation(program, "theta"));
 	
+	gl.drawElements(gl.TRIANGLES, obj.getIndices().length, gl.UNSIGNED_BYTE, 0);
+	
 }
-window.onload = function init()
-{
+
+window.onload = function init(){
 	
 	
     canvas = document.getElementById( "gl-canvas" );
@@ -117,7 +132,7 @@ window.onload = function init()
     gl.clearColor( 0.2, 0.2, 0.2, 1.0 );
 
     gl.enable(gl.DEPTH_TEST);;
-	console.log("number of objects: ",initObjects.length);
+	console.log("Sahnedeki obje sayısı: ",initObjects.length);
 	
 	
 	program = initShaders( gl, "vertex-shader", "fragment-shader" );
@@ -134,48 +149,36 @@ window.onload = function init()
 	render();
 }
 
-
-function render()
-{
+function render(){
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 	
 	for(var i=0;i<objects.length;i++){
-		
-		if(getBottom(objects[i].getVertices()) > GROUND_Y )
+		if(getBottom(objects[i].getVertices()) > GROUND_Y && boxClsn()==false) //
 			move(objects[i],gravity_speed,directions.DOWN);
-		//objects[i].changeTheta(0,objects[i].getTheta()[0] + idle_rotation_vel);
-		if(i==1)
-			console.log("bottom:" ,getBottom(objects[i].getVertices()));
 		gl.uniform3fv(objects[i].getThetaLoc(), objects[i].getTheta());
 		
 		buffer(objects[i]);
-		gl.drawElements(gl.TRIANGLES, objects[i].getIndices().length, gl.UNSIGNED_BYTE, 0);
 		
 	}
 
     requestAnimFrame( render );
 }
 
-
 window.onkeydown = function(event) {
 	let key = String.fromCharCode(event.keyCode).toLowerCase();
 	switch(key){
 		
-		case '&': 
-			//rotate(mainObject,directions.UP);
+		case '&': //
 			rotateCamera(directions.UP);
 			break;
-		case '%':  
-			//rotate(mainObject,directions.LEFT);
+		case '%':  //
 			rotateCamera(directions.LEFT);
 			break;
-		case '(': 
-			//rotate(mainObject,directions.DOWN);
+		case '(': //
 			rotateCamera(directions.DOWN);
 			break;
-		case '\'': 
-			//rotate(mainObject,directions.RIGHT);
+		case '\'': //
 			rotateCamera(directions.RIGHT);
 			break;
 			
@@ -210,18 +213,18 @@ window.onkeyup = function(){
 		case ' ':
 			gravity_speed = gravity_speed_init;
 			break;
-		
 	}
-	
 }
+
 function rotate(object,dir_enum){
 	let index = 1 - dir_enum[0];
-	let direction = (2*index-1)*dir_enum[1]; // 
+	let direction = (2*index-1)*dir_enum[1]; //
 	object.changeTheta(index,object.getTheta()[index]+direction*rotate_scale); 
 }
+
 function rotateCamera(dir_enum){
 	let index = 1 - dir_enum[0];
-	let direction = (2*index-1)*dir_enum[1]; 
+	let direction = (2*index-1)*dir_enum[1]; //
 	cameraTheta[index]+=direction*cameraSpeed;
 	gl.uniform3fv(camera_theta_loc, cameraTheta);
 }
@@ -231,16 +234,14 @@ function move(object,move_scale,dir_enum){
 	let index = dir_enum[0];
 	let direction = dir_enum[1];
 	let pay = 180 - Math.abs(object.getTheta()[1-index]);
-	let direction_rotation_fix = 1;
+	let direction_rotation_fix = 1;//
+	
 	let vertices = object.getVertices();
+	let prevVertices = []
+	prevVertices.push( object.getVertices());
+	let prev = prevVertices[0];
 	for(let i=0;i<vertices.length;i++)
-		vertices[i][index]+=direction*move_scale*direction_rotation_fix;
+			vertices[i][index]+=direction*move_scale*direction_rotation_fix;
 	object.setVertices(vertices);
 }
-function getBottom(vertices){
-	let min = 1; 
-	for(var i=0;i<vertices.length;i++)
-			if(vertices[i][1] < min)
-				min = vertices[i][1];
-	return min;
-}
+
