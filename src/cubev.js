@@ -6,7 +6,7 @@ var gl;
 var sizeScale = 1;
 var objects = []
 var mainObject = null;
-var mainObjectIndex = 0;
+var mainObjectIndex = initObjects.length-1;
 var GroundObject;
 var cameraTheta = [0,0,0];
 var camera_theta_loc;
@@ -14,9 +14,10 @@ var idle_rotation_vel = 1.0;
 const gravity_speed_init = 0.005;
 var gravity_speed = gravity_speed_init;
 var direction = 1;
-var move_scale =0.1
+var move_scale =edge_length
 var rotate_scale = 4;
-var GROUND_Y = -0.89;
+var epsilon = 0.01
+var GROUND_Y = -0.9 + epsilon;
 var cameraSpeed = 4;
 const directions = {
 	"RIGHT"	: [ 0,1],
@@ -62,8 +63,22 @@ class Object{
 }
 
 
-
-
+function controlCollusion(){
+	for(var i=0;i<objects.length-1;i++){
+		for(var j=0;j<objects[i].vertices.length;j++)
+			for(var k=0;k<objects[objects.length-1].vertices.length;k++)
+				if(objects[i].vertices[j].equals(objects[objects.length-1].vertices[k]))
+					return true;
+	}
+	return false;
+	
+}
+function newAsset(){
+	objects.push(newAsset);
+	
+	mainObjectIndex = objects.length-1;
+	
+}
 function buffer(obj){
 	
     var iBuffer = gl.createBuffer();
@@ -102,7 +117,7 @@ window.onload = function init()
     gl.clearColor( 0.2, 0.2, 0.2, 1.0 );
 
     gl.enable(gl.DEPTH_TEST);;
-	console.log("number of obj: ",initObjects.length);
+	console.log("number of objects: ",initObjects.length);
 	
 	
 	program = initShaders( gl, "vertex-shader", "fragment-shader" );
@@ -148,9 +163,10 @@ window.onkeydown = function(event) {
 	switch(key){
 		
 		case '&': 
+			//rotate(mainObject,directions.UP);
 			rotateCamera(directions.UP);
 			break;
-		case '%':
+		case '%':  
 			//rotate(mainObject,directions.LEFT);
 			rotateCamera(directions.LEFT);
 			break;
@@ -200,12 +216,12 @@ window.onkeyup = function(){
 }
 function rotate(object,dir_enum){
 	let index = 1 - dir_enum[0];
-	let direction = (2*index-1)*dir_enum[1];
+	let direction = (2*index-1)*dir_enum[1]; // 
 	object.changeTheta(index,object.getTheta()[index]+direction*rotate_scale); 
 }
 function rotateCamera(dir_enum){
 	let index = 1 - dir_enum[0];
-	let direction = (2*index-1)*dir_enum[1];
+	let direction = (2*index-1)*dir_enum[1]; 
 	cameraTheta[index]+=direction*cameraSpeed;
 	gl.uniform3fv(camera_theta_loc, cameraTheta);
 }
@@ -221,7 +237,6 @@ function move(object,move_scale,dir_enum){
 		vertices[i][index]+=direction*move_scale*direction_rotation_fix;
 	object.setVertices(vertices);
 }
-
 function getBottom(vertices){
 	let min = 1; 
 	for(var i=0;i<vertices.length;i++)
