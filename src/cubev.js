@@ -16,9 +16,10 @@ var gravity_speed = gravity_speed_init;
 var direction = 1;
 var move_scale =edge_length
 var rotate_scale = 4;
-var epsilon = 0.01
+var epsilon = gravity_speed_init; //
 var GROUND_Y = -0.9+epsilon;
 var cameraSpeed = 4;
+var ended = false;
 const directions = {
 	"RIGHT"	: [ 0,1],
 	"LEFT"	: [0,-1],
@@ -31,20 +32,22 @@ const directions = {
 var program;
 
 class Object{
-	constructor(vertex,vertexColors,indices){
+	constructor(obj){
+		obj = quad(obj);
 		this.vertices = [];
 		this.colors = [];
 		this.theta = [1,1,1];
-		for(var i=0;i<vertex.length;i++){
+		for(var i=0;i<obj.vertices.length;i++){
 			this.vertices.push([0,0,0]);
 			for(var j=0;j<3;j++)
-				this.vertices[i][j] = vertex[i][j];
+				this.vertices[i][j] = obj.vertices[i][j];
 		}		
 		
-		for(i=0;i<vertexColors.length;i++)
-			this.colors.push(vec4(...vertexColors[i]));
+		for(i=0;i<obj.colors.length;i++)
+			this.colors.push(vec4(...obj.colors[i]));
 		
-		this.indices = indices;
+		this.indices = obj.indices;
+		this.type = obj.type;
 	}
 	
 	setTheta = function(theta){this.theta = [...theta]};
@@ -52,6 +55,7 @@ class Object{
 	setVertices = function(vertices){ this.vertices = vertices; }
 	changeTheta = function(index,new_value){this.theta[index] = new_value%360};
 	getTheta = function(){ return this.theta; }
+	getType = function(){ return this.type; }
 	getThetaLoc = function(){ return this.thetaLoc; }
 	getVertices = function(){ return this.vertices; }
 	getColors = function(){ return this.colors; }
@@ -68,18 +72,29 @@ function arrayEquals(a, b) {
     a.every((val, index) => val === b[index]);
 }
 
-function lineClsn(line1,line2){
-	return line1[0] <= line2[1]+epsilon && line1[1]+epsilon >= line2[0];
+function lineClsn(line1,line2,distance=epsilon){
+	return line1[0] <= line2[1]+distance && line1[1]+distance >= line2[0];
 }
 
-function boxClsn(){
-	const [X,Y,Z] = getMinMax(objects[mainObjectIndex]);
+function boxClsn(mainObj = objects[objects.length-1]){
+	const [X,Y,Z] = getMinMax(mainObj);
 	for(var i=0;i<objects.length-1;i++){
+		
+		if(objects[i].getType()=="asset"){
+			let cubes = parseAsset(objects[i]);
+			for(var j=0;j<cubes.length;j++)
+				if(boxClsn(cubes[j]))
+					return true;
+		}
+		
+		else if(objects[i].getType()=="rect"){
 			let [x,y,z] = getMinMax(objects[i]);
 			
-			if(lineClsn(X,x) && lineClsn(Y,y) && lineClsn(Z,z))
+			if(lineClsn(X,x,0) && lineClsn(Y,y) && lineClsn(Z,z,0)){
 				return true;
-				
+			}
+		}
+		
 	}
 	return false;
 	
@@ -132,14 +147,15 @@ window.onload = function init(){
     gl.clearColor( 0.2, 0.2, 0.2, 1.0 );
 
     gl.enable(gl.DEPTH_TEST);;
-	console.log("Sahnedeki obje sayısı: ",initObjects.length);
+	console.log("number of objects:",initObjects.length);
 	
 	
 	program = initShaders( gl, "vertex-shader", "fragment-shader" );
     gl.useProgram( program );
 	
+	console.log(initObjects[1]);
     for(var i=0;i<initObjects.length;i++){
-		objects.push(new Object(initObjects[i].vertices,initObjects[i].colors,initObjects[i].indices));	
+		objects.push(new Object(initObjects[i]));	
 		buffer(objects[i]);
 	}
 	GroundObject = objects[1];
@@ -153,16 +169,26 @@ function render(){
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 	
+	
+	if(ended == false && boxClsn()==false) //
+		move(objects[objects.length-1],gravity_speed,directions.DOWN);
+	
+	else if(ended ==false && boxClsn()){
+		let newCubesToAdd = parseAsset(objects.pop());
+		for(var i=0;i<newCubesToAdd.length;i++){
+
+			objects.push(new Object(newCubesToAdd[i]));
+			buffer(objects[objects.length-1]);
+		}
+		console.log(objects[2]);
+		ended = true;
+	}
 	for(var i=0;i<objects.length;i++){
-		if(getBottom(objects[i].getVertices()) > GROUND_Y && boxClsn()==false) //
-			move(objects[i],gravity_speed,directions.DOWN);
-		gl.uniform3fv(objects[i].getThetaLoc(), objects[i].getTheta());
-		
+		gl.uniform3fv(objects[i].getThetaLoc(), objects[i].getTheta()); //		
 		buffer(objects[i]);
 		
 	}
-
-    requestAnimFrame( render );
+	requestAnimFrame( render );
 }
 
 window.onkeydown = function(event) {
@@ -170,15 +196,19 @@ window.onkeydown = function(event) {
 	switch(key){
 		
 		case '&': //
+			//rotate(mainObject,directions.UP);
 			rotateCamera(directions.UP);
 			break;
 		case '%':  //
+			//rotate(mainObject,directions.LEFT);
 			rotateCamera(directions.LEFT);
 			break;
 		case '(': //
+			//rotate(mainObject,directions.DOWN);
 			rotateCamera(directions.DOWN);
 			break;
 		case '\'': //
+			//rotate(mainObject,directions.RIGHT);
 			rotateCamera(directions.RIGHT);
 			break;
 			
@@ -218,7 +248,7 @@ window.onkeyup = function(){
 
 function rotate(object,dir_enum){
 	let index = 1 - dir_enum[0];
-	let direction = (2*index-1)*dir_enum[1]; //
+	let direction = (2*index-1)*dir_enum[1]; // 
 	object.changeTheta(index,object.getTheta()[index]+direction*rotate_scale); 
 }
 
@@ -230,7 +260,8 @@ function rotateCamera(dir_enum){
 }
 
 function move(object,move_scale,dir_enum){
-	
+	if(boxClsn()) //Sadece a
+		return
 	let index = dir_enum[0];
 	let direction = dir_enum[1];
 	let pay = 180 - Math.abs(object.getTheta()[1-index]);

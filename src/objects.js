@@ -1,18 +1,21 @@
 var edge_length = 0.1;
+
+let bitMap = [1, 1]
 initObjects = [
- createRect(-0.6,-0.7,-0.6,
+	createRect(-0.6,-0.7,-0.6,
 				1.2,0.05,1.2,
 				[[0.0, 0.0, 0.4, 1.0], [1.0, 0.0, 1.0, 1.0]]),
 				
-   createCube(
+     createCube(
 			   0,0,0,
 			   edge_length,
 			   [
 					[0.0, 0.0, 0.0, 1.0],
 					[0.2, 0.2, 0.2, 1.0]	
 			   ]
-			 )
-  
+			 ),
+
+			combineCubes([[1,1]],edge_length,[[0.8, 0.8, 0.8, 1],[0, 0.8, 0.8, 1],[0.8, 0, 0.8, 1]],0,0.5,0)		
 ]
 	
 function quad(objOriginal){
@@ -26,7 +29,8 @@ function quad(objOriginal){
 }
 
 function getMinMax(rectangle){
-	let vertex = rectangle.getVertices();
+	let vertex = Array.isArray(rectangle) ? rectangle: rectangle.getVertices();
+	
 	return [
 			[vertex[0][0],vertex[6][0]], //minX, maxX
 			[vertex[6][1],vertex[0][1]], //minY, maxY
@@ -36,14 +40,11 @@ function getMinMax(rectangle){
 }
 
 function getBottom(vertices){
-	let min = 1;
+	let min = 1; //
 	for(var i=0;i<vertices.length;i++)
 			if(vertices[i][1] < min)
 				min = vertices[i][1];
 	return min;
 }
-
-for(var i=0;i<initObjects.length;i++)
-	quad(initObjects[i]);
 
 
