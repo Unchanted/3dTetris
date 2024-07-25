@@ -15,10 +15,10 @@ var cameraSpeed = 4; //cameraSpeed
 
 const Y_LIMIT = initialAssetCoord[1]-edge_length; //y coordianate limit for game end condition
 const gravity_speed_init = 0.0005*prompt("Enter difficulity scale",2); //initial gravity_speed
-var gravity_speed = gravity_speed_init; //gravity_speed
+var gravity_speed = 0; //gravity_speed
 
 //For testing walls
-const DISPLAY_WALLS = false;
+const DISPLAY_WALLS = true;
 const OBJECT_DEPTH = false;
 const SPACE_SPEED = Math.max(0.02,gravity_speed_init*2);
 
@@ -138,7 +138,7 @@ function boxClsn(mainObj){
 		for(var i=0;i<objects.length-1;i++){
 			let [x,y,z] = getMinMax(objects[i]);
 			if(lineClsn(X,x) && lineClsn(Y,y,0) && lineClsn(Z,z))
-				return [i+1,y[1]-Y[0]]; 
+				return [i+1,y[1]-Y[0]]; //Aşağıya doğru olan collusionlar için overlap distance
 			
 		}
 	}
@@ -179,7 +179,6 @@ function rotateS(object,dir_enum){
 		
 	}
 	
-	//Set pivot point on previous place
 	let difAfter = []
 	
 	//we need 2 points to make asset stable after rotation
@@ -255,7 +254,9 @@ function detectAndDestroy(){
 
 //A Random function
 function randomFromArr(arr){
-	let index = Math.floor((Math.random() * (arr.length-1)));
+	var milliseconds = new Date().getMilliseconds();
+	let rndm = Math.random()+1;
+	let index = Math.floor(rndm *milliseconds) % arr.length;
 	return arr[index];
 }
 
@@ -263,8 +264,8 @@ function randomFromArr(arr){
 function createNewAsset(depth_y=OBJECT_DEPTH,connected_components=true){
 	
 	let blueprint = []; //initial blueprint
-	let depth_seeds = [1,2,2,3]; //seeds for depth
-	let hw_seeds = [2,2,2,3,3];
+	let depth_seeds = [1,1,1,2,2,3]; //seeds for depth
+	let hw_seeds = [2,2,2,2,3];
 	
 	//Elements of random structure
 	let h = randomFromArr([1]);
@@ -314,14 +315,16 @@ function buffer(obj,draw=gl.TRIANGLES){
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer());
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(obj.indices), gl.STATIC_DRAW);
 
-	setBuffer(obj.colors);
-
-	setAttrib(vColor,4);
 
 	setBuffer(obj.vertices);
 	
 	setAttrib(vPosition,3);
 
+	
+	setBuffer(obj.colors);
+
+	setAttrib(vColor,4);
+	
 	gl.drawElements(draw, obj.indices.length, gl.UNSIGNED_BYTE, 0);
 	
 }
@@ -341,7 +344,7 @@ window.onload = function init(){
 	gl.enable(gl.DEPTH_TEST);
 	program = initShaders( gl, "vertex-shader", "fragment-shader" );
     gl.useProgram( program );
-	
+
 	//Initialize attribute variables
 	vPosition = gl.getAttribLocation( program, "vPosition" );
 	vColor = gl.getAttribLocation( program, "vColor" );
@@ -365,7 +368,7 @@ window.onload = function init(){
 
 
 //MAIN: Render Loop
-function render(){
+function render(once=false){
 	
 	gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 	if(document.hasFocus()){
@@ -393,6 +396,12 @@ function render(){
 				for(var i=0;i<objects[objects.length-1].vertices.length;i++)
 					objects[objects.length-1].vertices[i][1]+=distance;
 				
+				if(prevColors!=null){
+					objects[objects.length-1].colors = prevColors;
+					prevColors=null;
+				}
+				objectSelected = false;
+					
 				let newCubesToAdd = disassemble(objects.pop());
 				for(var i=0;i<newCubesToAdd.length;i++)
 					addToScene(newCubesToAdd[i]);
@@ -405,7 +414,6 @@ function render(){
 				else{
 					let created = createNewAsset();
 					let colors = created.colors[0];
-					console.log(colors);
 					let colorStr = "rgb("+colors[0]*255+","+colors[1]*255+","+colors[2]*255+")";
 					canvas.style="border-color: "+colorStr+";";
 					document.getElementById("score").style="border-color: "+colorStr+"; color: "+colorStr+";";
@@ -416,10 +424,13 @@ function render(){
 		}
 		
 		//Render Object and Continue to loop
-		for(var i=0;i<objects.length;i++){
-			if(DISPLAY_WALLS || walls.includes(i)==false)
+		for(var i=0;i<objects.length;i++)
+			if(DISPLAY_WALLS && walls.includes(i))
+				buffer(objects[i],gl.LINES)
+			else
 				buffer(objects[i]);
-		}
+				
+		
 		prevTime = Date.now();
 		
 	}
@@ -428,7 +439,8 @@ function render(){
 		TimeStopTicket = true;
 	}
 	
-
+	if(once==true)
+		return
 	requestAnimFrame( render );
 	
 }

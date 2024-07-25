@@ -1,5 +1,6 @@
 
   /*
+	INTERPRET OBJECTS TO GENERATE A ONE EASILY
   
 		0 --  3
 	   /|    /|
@@ -24,8 +25,10 @@
 				  [0, 0, 1, 0]
 								] ]
  combineCubes(bitMap,0.1,[0.2, 0.2, 0.2, 1.0],0,0,0);
+  
  */
- 
+
+//Create rectangle
 function createRect(x,y,z,a,b,c,colors){
 	let rect = 	{
   "vertices": [
@@ -56,11 +59,11 @@ function createRect(x,y,z,a,b,c,colors){
   return rect;
 	
 }
-function createCube(x,y,z,a,colors){
-	return createRect(x,y,z,a,a,a,colors);
 
-}
+//create Cube
+function createCube(x,y,z,a,colors){return createRect(x,y,z,a,a,a,colors);}
 
+//Create a cube and map its indices for previous cube of same asset
 function createAndMap(x,y,z,a,colorArr,cubes){
 	let newCube = createCube(x,y,z,a,colorArr);
 	for(var i=0;i<newCube.indices.length;i++)
@@ -68,11 +71,10 @@ function createAndMap(x,y,z,a,colorArr,cubes){
 	return newCube;
 }
 
-function copy(object){
-	
-	return JSON.parse(JSON.stringify(object));
-	
-}
+//Copy any object
+function copy(object){return JSON.parse(JSON.stringify(object));}
+
+//Combine Cubes for given blueprint (it is like [1,1,3])
 function combineCubes(blueprint,a, colorArr,initialX = 0, initialY=0, initialZ=0){
 	var cubes = new Array();
 	for(var i=0;i<blueprint.length;i++){
@@ -88,41 +90,41 @@ function combineCubes(blueprint,a, colorArr,initialX = 0, initialY=0, initialZ=0
 		
 	}
 	
-	console.log(cubes);
+
 	let combinedObject = copy(cubes[0]);
 	combinedObject.vertices = combinedObject.vertices;
 	combinedObject.colors = combinedObject.colors;
 	combinedObject.type="asset";
+	
 	for(var i=1;i<cubes.length;i++){
 		for(var j=0;j<cubes[i].vertices.length;j++){
 			combinedObject.vertices.push(cubes[i].vertices[j]);
-			
 			combinedObject.colors.push(cubes[i].colors[j]);
-		}
-		
+		}		
 		combinedObject.indices.push(...(cubes[i].indices));
 	}
+	
 	return combinedObject;
 	
 }
 
-function parseAsset(asset){
+//Disassemble asset to cubes
+function disassemble(asset){
 	//8 color, 6 indis, 8 vertices
 	let cubes = []
-	let assetVertices = asset.getVertices();
+	let assetVertices = asset.vertices;
 	for(var j=0;j<assetVertices.length/8;j++){
 		let obj = {"vertices":[],"indices":[ 
-  [0,1,2,3],
-	[4,5,6,7],
-	[0,1,5,4],
-	[3,7,6,2],
-	[0,3,7,4],
-	[1,5,6,2] 
+											[0,1,2,3],
+											[4,5,6,7],
+											[0,1,5,4],
+											[3,7,6,2],
+											[0,3,7,4],
+											[1,5,6,2] 
 	
-  ],"type":"rect","colors":[]};
+											],"type":"rect","colors":[]};
 		obj.indices = quad(obj.indices);
 		let begin = j*8;
-		let edge_length = Math.abs(assetVertices[1][2]- assetVertices[0][2]);
 		obj.vertices = (assetVertices.slice(begin,begin+8));
 		obj.colors= (asset.colors.slice(begin,begin+8));
 		cubes.push(obj);
