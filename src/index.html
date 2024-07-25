@@ -26,7 +26,7 @@ uniform vec2 cameraCoord;
 void main()
 {
 
-	float zoom = camera.w;
+	float zoom = camera.w; 
 	vec3 cameraTheta = camera.xyz;
 	vec3 camera_angles = radians( cameraTheta );
     vec3 c_c = cos( camera_angles );
@@ -63,7 +63,7 @@ void main()
 	
 	gl_Position.x +=cameraCoord.x; 
 	gl_Position.y +=cameraCoord.y;
-    gl_Position.z = -gl_Position.z; // Dönme yönünü ters çevirir
+    gl_Position.z = -gl_Position.z;
 }
 </script>
 <script id="fragment-shader" type="x-shader/x-fragment">
@@ -99,4 +99,5 @@ main()
 	</canvas>
 
 </body>
+<footer><a href = "https://github.com/DevMilk"><i class="fa fa-github"></i></a></footer>
 </html>

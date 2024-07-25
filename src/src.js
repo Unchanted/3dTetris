@@ -10,7 +10,7 @@ var objects = [] //stores all objects
 var cameraTheta = [-12,26,0,1.0]; //stores camera angles
 var cameraCoord = [0.2,0]; //stores camera coordinates
 var cameraCoordLoc;  //stores camera coordinate address on WebGL
-var camera_theta_loc; //stores camera coordinate address on WebGL
+var camera_theta_loc; //stores camera angle address on WebGL
 var cameraSpeed = 4; //cameraSpeed
 
 const Y_LIMIT = initialAssetCoord[1]-edge_length; //y coordianate limit for game end condition
@@ -19,10 +19,7 @@ var gravity_speed = gravity_speed_init; //gravity_speed
 
 //For testing walls
 var DISPLAY_WALLS = false;
-/*Not: Eğer alpha değerleri dahil edilirse, depth olmayacağından dolayı,
-objelerin derinliği render edilme sırasına göre değişiyor o yüzden bir takım sıkıntılar çıkıyor.
-*/
-const OBJECT_DEPTH = false;
+var OBJECT_DEPTH = false;
 const SPACE_SPEED = Math.max(0.02,gravity_speed_init*2);
 
 var move_scale =edge_length; //movement step size 
@@ -144,7 +141,7 @@ function boxClsn(mainObj){
 		for(var i=0;i<objects.length-1;i++){
 			let [x,y,z] = getMinMax(objects[i]);
 			if(lineClsn(X,x) && lineClsn(Y,y,0) && lineClsn(Z,z))
-				return [i+1,y[1]-Y[0]]; //Aşağıya doğru olan collusionlar için overlap distance
+				return [i+1,y[1]-Y[0]]; 
 			
 		}
 	}
@@ -191,11 +188,11 @@ function rotateS(object,dir_enum){
 	//we need 2 points to make asset stable after rotation
 	pivot = vertices[0];
 	referans = vertices[6];
-	for(var i=0;i<3;i++)
+	for(let i=0;i<3;i++)
 		difAfter.push(pivot[i]-referans[i]);
 	
 	let extra = [0,0,0];
-	for(var i=0;i<3;i++)
+	for(let i=0;i<3;i++)
 		extra[i] = (difBefore[i]-difAfter[i])/2;
 	
 	for(let i=0;i<vertices.length;i++)
@@ -406,21 +403,19 @@ function fixColor(){
 	objectSelected = false; //Break the object hold
 	
 }
-
 //MAIN: Render Loop
 function render(once=false){
 	
 	gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 	if(document.hasFocus()){
 		
-		var deltaTime = (Date.now() - prevTime)/10; //divide by 10 for normalization
+		let deltaTime = (Date.now() - prevTime)/10; //divide by 10 for normalization
 		
 		if(TimeStopTicket){
-			deltaTime ^= deltaTime;
+			deltaTime = 0;
 			TimeStopTicket = false;
 			document.getElementsByTagName("body")[0].style="";
 		}
-		
 		if(ended==false){
 			let [CollidedObjectIndex,distance] = boxClsn(objects[objects.length-1]);
 			CollidedObjectIndex -=1;
@@ -466,7 +461,6 @@ function render(once=false){
 		//Render Object and Continue to loop
 		renderAllObjects()
 		
-		prevTime = Date.now();
 		
 	}
 	else{
@@ -474,10 +468,10 @@ function render(once=false){
 		TimeStopTicket = true;
 	}
 	
+	prevTime = Date.now();
 	if(once==true)
 		return
 	requestAnimFrame( render );
-	
 }
 
 //Fix movement for camera perspective
@@ -531,7 +525,7 @@ function move(object,move_scale,dir_enum,ignore_collisions=false){
 	for(let i=0;i<vertices.length;i++)
 			vertices[i][index]+=direction*move_scale;
 		
-	//set new vertices, it will be rendered on next render
+	//revert move on collision
 	if(ignore_collisions==false && dir_enum!=directions.DOWN &&  boxClsn(object)[0]>=1)
 		object.vertices = prev;
 	return prev;
