@@ -34,6 +34,7 @@ void main()
     vec3 c_s = sin( camera_angles );
 					
 					
+	//Kamera için yaptım
 	mat4 cx = mat4( zoom,  0.0,  0.0, 0.0,
 					0.0,  c_c.x,  c_s.x, 0.0,
 					0.0, -c_s.x,  c_c.x, 0.0,
@@ -68,7 +69,7 @@ void main()
     gl_Position = vPosition * cy * cx*cz;
 	gl_Position.x +=cameraCoord.x;
 	gl_Position.y +=cameraCoord.y;
-    gl_Position.z = -gl_Position.z; 
+    gl_Position.z = -gl_Position.z;
 }
 </script>
 <script id="fragment-shader" type="x-shader/x-fragment">
@@ -90,13 +91,16 @@ main()
 <script type="text/javascript" src="userInput.js"></script>
 <body>
 
-<div id="score">Score: 0</div>
-<canvas id="gl-canvas" width="680"" height="680">
-Oops ... your browser doesn't support the HTML5 canvas element
-</canvas>
+	<div id="options">
+		<input type="checkbox" id="alpha" name="alpha" onclick='EnableAlpha(this);'>
+		<label for="alpha">Enable Alpha</label><br>
+	</div>
 
-<br/>
-
+	<div id="score">Score: 0</div>
+	
+	<canvas id="gl-canvas" width="680" height="680">
+	Oops ... your browser doesn't support the HTML5 canvas element
+	</canvas>
 
 </body>
 <footer><a href = "https://github.com/DevMilk"><i class="fa fa-github"></i></a></footer>

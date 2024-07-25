@@ -18,7 +18,10 @@ const gravity_speed_init = 0.0005*prompt("Enter difficulity scale",2); //initial
 var gravity_speed = gravity_speed_init; //gravity_speed
 
 //For testing walls
-const DISPLAY_WALLS = false;
+var DISPLAY_WALLS = false;
+/*Not: Eğer alpha değerleri dahil edilirse, depth olmayacağından dolayı,
+objelerin derinliği render edilme sırasına göre değişiyor o yüzden bir takım sıkıntılar çıkıyor.
+*/
 const OBJECT_DEPTH = false;
 const SPACE_SPEED = Math.max(0.02,gravity_speed_init*2);
 
@@ -39,12 +42,14 @@ const directions = {
 	"BEHIND" : [2,-1]
 
 }
+
 //Sounds
 var moveSound;
 var stackSound;
 var stackCompleteSound;
 var rotateSound;
 var fallSound;
+
 //Game Object
 class Object{
 	constructor(obj){
@@ -110,6 +115,7 @@ function EndGame(){
 	canvas.style="border-color: var(--background); box-shadow: 0 0 5vw black;";
 }
 
+//Events when game paused
 function gamePaused(){
 	document.getElementsByTagName("body")[0].style="filter:blur(2px);";
 }
@@ -205,6 +211,7 @@ function rotateS(object,dir_enum){
 	
 }
 
+//Change score
 function changeScore(delta){
 	let element = document.getElementById("score");
 	let currentScore = parseInt(element.innerText.split(" ")[1]);
@@ -212,6 +219,7 @@ function changeScore(delta){
 	element.innerText = "Score: "+currentScore;
 	
 }
+
 //Detect filled planes, destroy objects from plane and move everything down 
 function detectAndDestroy(){
 	
@@ -230,7 +238,6 @@ function detectAndDestroy(){
 		//If plane is full, then delete all
 		if(verticesOnY.length >= w_count*h_count){
 
-			//Silinme sonrası indexler değişeceği için aşağı itmeyi ilk önce yapmalıyım
 			for(var j=1+walls.length;j<objects.length;j++){
 				//Objects at lower should not be move down
 				if(objectIndexesAtRow.includes(j) || verticesOnY.includes(j))
@@ -301,30 +308,27 @@ function addToScene(newObject){
 	buffer(objects[objects.length-1]);
 }
 
+//Set Buffer
+function setBuffer(array){
+	gl.bindBuffer( gl.ARRAY_BUFFER, gl.createBuffer() );
+	gl.bufferData( gl.ARRAY_BUFFER, flatten(array), gl.STATIC_DRAW );
+}
+
+//Set Attrib
+function setAttrib(variable,length){
+	gl.vertexAttribPointer( variable, length, gl.FLOAT, false, 0, 0 );
+	gl.enableVertexAttribArray( variable );
+}
+	
 //Render Object
 function buffer(obj,draw=gl.TRIANGLES){
-	
-	function setBuffer(array){
-		gl.bindBuffer( gl.ARRAY_BUFFER, gl.createBuffer() );
-		gl.bufferData( gl.ARRAY_BUFFER, flatten(array), gl.STATIC_DRAW );
-	}
-	
-	function setAttrib(variable,length){
-		gl.vertexAttribPointer( variable, length, gl.FLOAT, false, 0, 0 );
-		gl.enableVertexAttribArray( variable );
-	}
-	
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer());
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(obj.indices), gl.STATIC_DRAW);
 
-
 	setBuffer(obj.vertices);
-	
 	setAttrib(vPosition,3);
-
 	
 	setBuffer(obj.colors);
-
 	setAttrib(vColor,4);
 	
 	gl.drawElements(draw, obj.indices.length, gl.UNSIGNED_BYTE, 0);
@@ -339,15 +343,16 @@ window.onload = function init(){
 	
 	//Initialize webGL
     canvas = document.getElementById( "gl-canvas" );
+	
+	leftBorderWidth = parseFloat(window.getComputedStyle(canvas).borderLeftWidth.slice(0,2));
+	topBorderWidth = parseFloat(window.getComputedStyle(canvas).borderTopWidth.slice(0,2));
     gl = WebGLUtils.setupWebGL( canvas );
     if ( !gl ) { alert( "WebGL isn't available" ); }
     gl.viewport( 0, 0, canvas.width, canvas.height );
     gl.clearColor( 0.1,	0.04,	0.17,   1.0 );
-	//gl.ONE, gl.ONE_MINUS_SRC_ALPHA
 	gl.enable(gl.DEPTH_TEST)
 	if(DISPLAY_WALLS==true){
 		gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-
 		gl.enable(gl.BLEND);
 		gl.disable(gl.DEPTH_TEST);
 	}
@@ -360,7 +365,7 @@ window.onload = function init(){
 	
 	//Initialize uniform variables
 	camera_theta_loc = gl.getUniformLocation(program, "camera");
-	gl.uniform4fv(camera_theta_loc, cameraTheta); //init camera
+	gl.uniform4fv(camera_theta_loc, cameraTheta);
 	cameraCoordLoc = gl.getUniformLocation(program, "cameraCoord");
     gl.uniform2fv(cameraCoordLoc, cameraCoord);
 	
@@ -375,6 +380,32 @@ window.onload = function init(){
 	render();
 }
 
+//Render All Objects by buffering
+function renderAllObjects(){
+	for(var i=0;i<objects.length;i++){
+		if(DISPLAY_WALLS==false && walls.includes(i))
+			continue
+		else
+			buffer(objects[i]);
+	}
+	
+}
+
+//Fix collision after grounding
+function fixCollision(distance){
+	move(objects[objects.length-1],distance,directions.UP,true);
+}
+
+//Fix color bug of mouse event
+function fixColor(){
+	//Fix color when object selected by mouse
+	if(prevColors!=null){
+		objects[objects.length-1].colors = prevColors;
+		prevColors=null;
+	}
+	objectSelected = false; //Break the object hold
+	
+}
 
 //MAIN: Render Loop
 function render(once=false){
@@ -389,6 +420,7 @@ function render(once=false){
 			TimeStopTicket = false;
 			document.getElementsByTagName("body")[0].style="";
 		}
+		
 		if(ended==false){
 			let [CollidedObjectIndex,distance] = boxClsn(objects[objects.length-1]);
 			CollidedObjectIndex -=1;
@@ -396,35 +428,32 @@ function render(once=false){
 				prevVertices = move(objects[objects.length-1],gravity_speed*deltaTime,directions.DOWN);
 			else{
 				stackSound.play();
-				
 				/*
-				Dissassemble asset to cubes for preventing collusion detection 
+				Dissassemble asset to cubes for preventing collision detection 
 				on 2 asset which is possible on future
 				*/
 				
-				//Fix Collusion
-				for(var i=0;i<objects[objects.length-1].vertices.length;i++)
-					objects[objects.length-1].vertices[i][1]+=distance;
+				fixCollision(distance);
+				fixColor();
 				
-				//Fix color when object selected by mouse
-				if(prevColors!=null){
-					objects[objects.length-1].colors = prevColors;
-					prevColors=null;
-				}
-				objectSelected = false;
-					
+				//Dissassemble the fallen object
 				let newCubesToAdd = disassemble(objects.pop());
 				for(var i=0;i<newCubesToAdd.length;i++)
 					addToScene(newCubesToAdd[i]);
 				changeScore(newCubesToAdd.length*10);
+				
 				//We execute this function only there for optimization
+				//Detect planes starting from bottom to top and destroy objects within full plane
 				detectAndDestroy();
+				
+				//Check If Game Ended
 				ended = isgameEnded();
 				if(ended)
 					EndGame();
 				else{
-					let created = createNewAsset();
-					let colors = created.colors[0];
+					
+					//Get new asset's color and change border color of canvas
+					let colors = createNewAsset().colors[0];
 					let colorStr = "rgb("+colors[0]*255+","+colors[1]*255+","+colors[2]*255+")";
 					canvas.style="border-color: "+colorStr+";";
 					document.getElementById("score").style="border-color: "+colorStr+"; color: "+colorStr+";";
@@ -435,14 +464,7 @@ function render(once=false){
 		}
 		
 		//Render Object and Continue to loop
-		for(var i=0;i<objects.length;i++){
-			if(DISPLAY_WALLS==false && walls.includes(i) && i!=5)
-				continue
-			if(i==5)
-				buffer(objects[i],gl.LINES)
-			else
-				buffer(objects[i]);
-		}
+		renderAllObjects()
 		
 		prevTime = Date.now();
 		
@@ -497,7 +519,7 @@ function rotateCamera(dir_enum,scale=1){
 }
 
 //Move Object
-function move(object,move_scale,dir_enum,ignore_collusions=false){
+function move(object,move_scale,dir_enum,ignore_collisions=false){
 	
 	//Get index and direction from enum.
 	let index = dir_enum[0];
@@ -510,7 +532,7 @@ function move(object,move_scale,dir_enum,ignore_collusions=false){
 			vertices[i][index]+=direction*move_scale;
 		
 	//set new vertices, it will be rendered on next render
-	if(ignore_collusions==false && dir_enum!=directions.DOWN &&  boxClsn(object)[0]>=1)
+	if(ignore_collisions==false && dir_enum!=directions.DOWN &&  boxClsn(object)[0]>=1)
 		object.vertices = prev;
 	return prev;
 }
