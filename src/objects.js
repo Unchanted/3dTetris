@@ -1,49 +1,48 @@
-var edge_length = 0.1;
-var w_count = 4;
+var edge_length = 0.1; //edge length of cubes
+var w_count = 5;
 var h_count = 4;
 var w = edge_length*w_count;
 var h = 0.05;
 var d = edge_length*h_count;
-var ground = -0.7;
+var ground = -0.5;
 var l = 0.01;
+var initialAssetCoord = [-0.2,0.7,0.2]
+var wallTransparency = 0.0;
+var wallLength = 1.3;
+var wallPivot = 0.8;
+//First objects
 var initObjects = [
-	 createRect(-0.1,ground,-0.3,
-				w,h,d,
+	 createRect(-0.4,ground,0,
+				w,2*h,d,
 				[[0.7, 0.7, 0.7, 1.0]]),
 				
-				/*createRect(-0.5,0.3,-0.6,
-				0.1,w+0.4,d,
-				[[0.0, 0.0, 1.0, 1.0]]),
+				createRect(-0.5,wallPivot,0,
+				0.1,wallLength,d,
+				[[0.0, 0.0, 1.0, wallTransparency]]),
 				
-				createRect(-0.4,0.3,-0.6-edge_length,
-				w,w+0.4,0.1,
-				[[0.0, 0.0, 1.0, 1.0]]),
+				createRect(-0.4,wallPivot,0-edge_length,
+				w,wallLength,0.1,
+				[[0.0, 0.0, 1.0, wallTransparency]]),
 				
-				createRect(-0.4,0.3,-0.6+d,
-				w,w+0.4,0.1,
-				[[0.0, 0.0, 1.0, 1.0]]),
+				createRect(-0.4,wallPivot,0+d,
+				w,wallLength,0.1,
+				[[0.0, 0.0, 1.0, wallTransparency]]),
 				
-				createRect(-0.4+w,0.3,-0.6,
-				0.1,w+0.4,d,
-				[[0.0, 0.0, 1.0, 1.0]]),
-				
-    /* createCube(
-			   0,0,0,
-			   edge_length,
-			   [
-					[0.0, 0.0, 0.0, 1.0],
-					[0.2, 0.2, 0.2, 1.0]	
-			   ]
-			 ),*/
+				createRect(-0.4+w,wallPivot,0,
+				0.1,wallLength,d,
+				[[0.0, 0.0, 1.0, wallTransparency]]),
 
 			combineCubes([
-							[3,4,4,4], 
+							[3,3], 
 							
 						],
-						edge_length,[[0.8, 0.8, 0.0, 1]],-0.1,0.5,0)		
+						edge_length,[[0.8, 0.8, 0.0, 1]],...initialAssetCoord)		
 ]
-	
 
+//Make invisible objects such as walls
+walls = [1,2,3,4];
+
+//Get 4 indices and generate 6 indices for cube
 function quad(indicesOriginal){
 	let indices = indicesOriginal;
 	for(var j=0;j<indices.length;j++){
@@ -53,8 +52,10 @@ function quad(indicesOriginal){
 	indices = [].concat.apply([], indices);
 	return indices;
 }
+
+//return Minimum and Maximum per coordinates of given rectangle object or vertices
 function getMinMax(rectangle){
-	let vertex = Array.isArray(rectangle) ? rectangle: rectangle.vertices;
+	let vertex = rectangle.vertices;
 	let pivot = 0;
 	let refer = 6;
 	let minMaxes = [[10,-10],[10,-10],[10,-10]];
@@ -66,11 +67,4 @@ function getMinMax(rectangle){
 	}
 	return minMaxes;
 	
-}
-function getBottom(vertices){
-	let min = 1; 
-	for(var i=0;i<vertices.length;i++)
-			if(vertices[i][1] < min)
-				min = vertices[i][1];
-	return min;
 }
