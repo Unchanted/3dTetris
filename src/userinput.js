@@ -55,11 +55,11 @@ window.addEventListener('wheel', ({ deltaY }) => {
 	//ZOOM
 	
 	let mousePos = getMousePos(event);
-	cameraTheta[3] += deltaY/1000;
+	cameraTheta[3] += deltaY/3000;
 	
 	//IF zoomed out then get camera coordinates to normal
 	if(deltaY>0)
-		cameraCoord = [0,0];
+		cameraCoord = [0.2,0];
 	
 	//Zoom In
 	else{
@@ -123,7 +123,7 @@ window.onkeydown = function(event) {
 			
 		//Gravity
 		case ' ':
-			gravity_speed = 0.01;
+			gravity_speed = SPACE_SPEED;
 			break;
 			
 	}
