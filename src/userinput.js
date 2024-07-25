@@ -94,9 +94,11 @@ window.onkeydown = function(event) {
 			
 		//Object Rotation
 		case 'q':
+			rotateSound.play();
 			rotateS(objects[objects.length-1],directions.UP);
 			break;
 		case 'e':
+			rotateSound.play();
 			rotateS(objects[objects.length-1],directions.LEFT);
 			break;
 			
@@ -123,6 +125,8 @@ window.onkeydown = function(event) {
 			
 		//Gravity
 		case ' ':
+			if(gravity_speed!=SPACE_SPEED)
+				fallSound.play();
 			gravity_speed = SPACE_SPEED;
 			break;
 			

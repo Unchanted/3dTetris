@@ -14,13 +14,13 @@ var camera_theta_loc; //stores camera coordinate address on WebGL
 var cameraSpeed = 4; //cameraSpeed
 
 const Y_LIMIT = initialAssetCoord[1]-edge_length; //y coordianate limit for game end condition
-const gravity_speed_init = 0.0005; //initial gravity_speed
+const gravity_speed_init = 0.0005*prompt("Enter difficulity scale",2); //initial gravity_speed
 var gravity_speed = gravity_speed_init; //gravity_speed
 
 //For testing walls
 const DISPLAY_WALLS = false;
-const OBJECT_DEPTH = true;
-const SPACE_SPEED = 0.02;
+const OBJECT_DEPTH = false;
+const SPACE_SPEED = Math.max(0.02,gravity_speed_init*2);
 
 var move_scale =edge_length; //movement step size 
 var epsilon = -0.05; //for collusions
@@ -43,7 +43,8 @@ const directions = {
 var moveSound;
 var stackSound;
 var stackCompleteSound;
-
+var rotateSound;
+var fallSound;
 //Game Object
 class Object{
 	constructor(obj){
@@ -65,9 +66,12 @@ class Object{
 
 //Assign sound files
 function initSounds(){
-	moveSound = new Audio('move.mp3');
-	stackSound = new Audio("stack.mp3");
-	stackCompleteSound = new Audio("stackComplete.mp3");
+	let soundFolder = "soundeffects/";
+	moveSound = new Audio(soundFolder+'move.mp3');
+	stackSound = new Audio(soundFolder+"stack.mp3");
+	stackCompleteSound = new Audio(soundFolder+"stackComplete.mp3");
+	rotateSound = new Audio(soundFolder+"rotate.mp3");
+	fallSound = new Audio(soundFolder+"fall.wav");
 }
 
 //Check if 2 min max collusions
@@ -101,13 +105,13 @@ function isgameEnded(){
 
 //Commands that executes after game end
 function EndGame(){
-	
-	
+	let element = document.getElementById("score");
+	element.innerHTML="Game Over<br>Final "+element.innerHTML;
+	canvas.style="border-color: var(--background); box-shadow: 0 0 5vw black;";
 }
 
 function gamePaused(){
 	document.getElementsByTagName("body")[0].style="filter:blur(2px);";
-
 }
 
 //Check collusion for main object
@@ -164,7 +168,7 @@ function rotateS(object,dir_enum){
 		if(isVertical){
 			
 			let difY = vertices[i][1]-pivot[1];
-			vertices[i][1] += direction*(difZ-difY);
+			vertices[i][1] -= direction*(difY+difZ);
 			vertices[i][2] += direction*(difY-difZ);
 		}
 		else{
@@ -260,12 +264,12 @@ function createNewAsset(depth_y=OBJECT_DEPTH,connected_components=true){
 	
 	let blueprint = []; //initial blueprint
 	let depth_seeds = [1,2,2,3]; //seeds for depth
-	let hw_seeds = [1,2,2,2];
+	let hw_seeds = [2,2,2,3,3];
 	
 	//Elements of random structure
 	let h = randomFromArr([1]);
 	if(depth_y)
-		h = randomFromArr(depth_seeds)%1+1;
+		h = randomFromArr(depth_seeds)%2+1;
 	if(connected_components)
 		depth_seeds = depth_seeds.filter(item => (item!=0));
 	let w;
@@ -278,7 +282,6 @@ function createNewAsset(depth_y=OBJECT_DEPTH,connected_components=true){
 			arr.push(randomFromArr(depth_seeds));
 		blueprint.push(arr);
 	}
-	console.log(blueprint);
 	//Random Colors
 	let colors = [] 
 	for(let i=0;i<4;i++)
@@ -286,7 +289,7 @@ function createNewAsset(depth_y=OBJECT_DEPTH,connected_components=true){
 	let obj = combineCubes(blueprint,edge_length,colors,...initialAssetCoord);		
 						
 	addToScene(obj);
-	
+	return obj;
 }
 
 //Add new object to scene
@@ -296,7 +299,7 @@ function addToScene(newObject){
 }
 
 //Render Object
-function buffer(obj){
+function buffer(obj,draw=gl.TRIANGLES){
 	
 	function setBuffer(array){
 		gl.bindBuffer( gl.ARRAY_BUFFER, gl.createBuffer() );
@@ -319,7 +322,7 @@ function buffer(obj){
 	
 	setAttrib(vPosition,3);
 
-	gl.drawElements(gl.TRIANGLES, obj.indices.length, gl.UNSIGNED_BYTE, 0);
+	gl.drawElements(draw, obj.indices.length, gl.UNSIGNED_BYTE, 0);
 	
 }
 
@@ -396,20 +399,27 @@ function render(){
 				changeScore(newCubesToAdd.length*10);
 				//We execute this function only there for optimization
 				detectAndDestroy();
-				
-				if(isgameEnded())
-					return EndGame();
-				
-				createNewAsset();
+				ended = isgameEnded();
+				if(ended)
+					EndGame();
+				else{
+					let created = createNewAsset();
+					let colors = created.colors[0];
+					console.log(colors);
+					let colorStr = "rgb("+colors[0]*255+","+colors[1]*255+","+colors[2]*255+")";
+					canvas.style="border-color: "+colorStr+";";
+					document.getElementById("score").style="border-color: "+colorStr+"; color: "+colorStr+";";
+					
+				}
 			}
-			for(var i=0;i<objects.length;i++){
-				if(DISPLAY_WALLS || walls.includes(i)==false)
-					buffer(objects[i]);
-			}
+
 		}
 		
 		//Render Object and Continue to loop
-		
+		for(var i=0;i<objects.length;i++){
+			if(DISPLAY_WALLS || walls.includes(i)==false)
+				buffer(objects[i]);
+		}
 		prevTime = Date.now();
 		
 	}
@@ -437,13 +447,13 @@ function directionFix(dir_enum){
 	let d = 360;
 	
 	//Normal Direction
-	if(interval(-45,45) || interval(-405,-315) || interval(-360,-315))
+	if(interval(-405,-315) || interval(-45,45) )
 		return dir_enum;
 	
 	if(interval(-135,-45) || interval(225,315))
 		return order[(order.findIndex((x)=>{return x==dir_enum})+1)%4];
 	
-	else if(interval(45,135) || interval(-315,-225))
+	else if(interval(-315,-225) || interval(45,135) )
 		return order[(order.findIndex((x)=>{return x==dir_enum})+3)%4];
 	
 	else
