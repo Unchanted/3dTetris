@@ -40,18 +40,18 @@ function createRect(x,y,z,a,b,c,colors){
     ],
   "colors": [],
   "indices": [ 
-  [0,1,2,3],
-	[4,5,6,7],
-	[0,1,5,4],
-	[3,7,6,2],
-	[0,3,7,4],
-	[1,5,6,2] 
+  [0,1,2,3], 
+	[4,5,6,7], 
+	[0,1,5,4], 
+	[3,7,6,2], 
+	[0,3,7,4], 
+	[1,5,6,2]  
 	
   ],
   "type":"rect"
   }
   for(var i=0;i<rect.vertices.length;i++)
-	  rect.colors.push(colors[i%colors.length]);
+	  rect.colors.push(colors[(i*4)%colors.length]);
   rect.indices = quad(rect.indices);
   return rect;
 	
