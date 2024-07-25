@@ -13,7 +13,7 @@ var idle_rotation_vel = 1.0;
 const gravity_speed_init = 0.001;
 var gravity_speed = gravity_speed_init;
 var direction = 1;
-var move_scale =0.03
+var move_scale =edge_length;
 var rotate_scale = 4;
 var epsilon = -0.001; 
 var GROUND_Y = -0.9+epsilon;
@@ -70,19 +70,24 @@ function lineClsn(line1,line2,distance=epsilon){
 
 function boxClsn(mainObj){
 	const [X,Y,Z] = getMinMax(mainObj);
+	
 	if(mainObj.type=="asset"){
+		
 		let cubes = parseAsset(mainObj);
 		for(var j=0;j<cubes.length;j++){
-			if(boxClsn(cubes[j]))
+			if(boxClsn(cubes[j])==true){
+
 				return true;
+			}
 		}
 	}
-		
-	for(var i=0;i<objects.length-1;i++){
-		let [x,y,z] = getMinMax(objects[i]);
-		
-		if(lineClsn(X,x) && lineClsn(Y,y,0) && lineClsn(Z,z)){
-			return true;
+	else{
+		for(var i=0;i<objects.length-1;i++){
+			let [x,y,z] = getMinMax(objects[i]);
+			
+			if(lineClsn(X,x) && lineClsn(Y,y,0) && lineClsn(Z,z)){
+				return true;
+			}
 		}
 	}
 	return false;
@@ -91,7 +96,7 @@ function boxClsn(mainObj){
 function rotateS(object,dir_enum){
 	
 	let vertices = object.vertices;
-	
+	let temp = copy(object.vertices);
 	let isVertical = dir_enum[0]; 
 	let direction = dir_enum[1];
 	
@@ -103,18 +108,17 @@ function rotateS(object,dir_enum){
 	
 
 	for(let i=1;i<vertices.length;i++){
+		
+		let difZ = vertices[i][2]-pivot[2];
 		if(isVertical){
 			
-			let difY = vertices[i][1]-pivot[1]
-			let difZ = vertices[i][2]-pivot[2];
+			let difY = vertices[i][1]-pivot[1];
 			vertices[i][1] += direction*(difZ-difY);
 			vertices[i][2] += direction*(difY-difZ);
 			
 		}
 		else{
-			let difX = vertices[i][0]-pivot[0]
-			let difZ = vertices[i][2]-pivot[2];
-			
+			let difX = vertices[i][0]-pivot[0];
 			vertices[i][0] += direction*(difZ+difX);
 			vertices[i][2] += direction*(difZ-difX);
 			
@@ -135,8 +139,10 @@ function rotateS(object,dir_enum){
 		for(let j=0;j<3;j++)
 			vertices[i][j] -= extra[j];
 	}
-	object.vertices = vertices;
-		
+	if(boxClsn(object))
+		object.vertices = temp;
+	else
+		object.vertices = vertices;
 	
 }
 function newAsset(){
@@ -189,16 +195,16 @@ window.onload = function init(){
     gl.clearColor( 0.2, 0.2, 0.2, 1.0 );
 
     gl.enable(gl.DEPTH_TEST);;
-	console.log("number of objects:",initObjects.length);
+	console.log("Sahnedeki obje sayısı: ",initObjects.length);
 	
 	
 	program = initShaders( gl, "vertex-shader", "fragment-shader" );
     gl.useProgram( program );
 	
-	console.log(initObjects[1]);
     for(var i=0;i<initObjects.length;i++)
 		addToScene(initObjects[i])
 	
+	console.log(initObjects[2]);
 	GroundObject = objects[1];
 	camera_theta_loc = gl.getUniformLocation(program, "camera");
 	mainObject = objects[mainObjectIndex];
@@ -219,12 +225,10 @@ function render(){
 		let newCubesToAdd = parseAsset(objects.pop());
 		for(var i=0;i<newCubesToAdd.length;i++)
 			addToScene(newCubesToAdd[i]);
-		
-		console.log(objects[2]);
-		ended = true;
+		addToScene(initObjects[2]);
 	}
 	for(var i=0;i<objects.length;i++){
-		gl.uniform3fv(objects[i].getThetaLoc(), objects[i].getTheta()); 
+		gl.uniform3fv(objects[i].getThetaLoc(), objects[i].getTheta());
 		
 		buffer(objects[i]);
 		
@@ -236,16 +240,20 @@ window.onkeydown = function(event) {
 	let key = String.fromCharCode(event.keyCode).toLowerCase();
 	switch(key){
 		
-		case '&': //
+		case '&': 
+			//objects[objects.length-1].rotate(directions.UP,1);
 			rotateCamera(directions.UP);
 			break;
-		case '%':  
+		case '%': 
+			//rotate(mainObject,directions.LEFT);
 			rotateCamera(directions.LEFT);
 			break;
-		case '(': //
+		case '(':
+			//rotate(mainObject,directions.DOWN);
 			rotateCamera(directions.DOWN);
 			break;
-		case '\'': //
+		case '\'':
+			//rotate(mainObject,directions.RIGHT);
 			rotateCamera(directions.RIGHT);
 			break;
 		case 'q':
@@ -256,16 +264,16 @@ window.onkeydown = function(event) {
 			break;
 			
 		case 'w':
-			move(mainObject,move_scale,directions.FRONT);
+			move(objects[objects.length-1],move_scale,directions.FRONT);
 			break;
 		case 'a':
-			move(mainObject,move_scale,directions.LEFT);
+			move(objects[objects.length-1],move_scale,directions.LEFT);
 			break;
 		case 's':
-			move(mainObject,move_scale,directions.BEHIND);
+			move(objects[objects.length-1],move_scale,directions.BEHIND);
 			break;
 		case 'd':
-			move(mainObject,move_scale,directions.RIGHT);
+			move(objects[objects.length-1],move_scale,directions.RIGHT);
 			break;
 		case ' ':
 			gravity_speed = 0.01;
