@@ -118,11 +118,8 @@ window.onmousemove = function(event){
 				//If mouse X or Y difference is big enough to move
 				if(isXChangeEnough || isYChangeEnough){
 					
-					//Check if mouse on object
-					let isSelectedNow = isObjectSelected(event,true);
-					
 					//If mouse is not an object then move it
-					if(!isSelectedNow){
+					if(!isObjectSelected(event,true)){
 						
 						if(isXChangeEnough){
 							let directionX = Math.abs(x_change)/x_change > 0 ? directions.RIGHT : directions.LEFT;
@@ -176,6 +173,7 @@ window.addEventListener('wheel', ({ deltaY }) => {
 
 //Key pressed
 window.onkeydown = function(event) {
+	if(ended) return;
 	let key = String.fromCharCode(event.keyCode).toLowerCase();
 	
 	switch(key){
@@ -246,3 +244,40 @@ window.onkeyup = function(){
 			break;
 	}
 }
+
+//Mapping mobile bindings(touch events) to mouse bindings
+function touchHandler(event)
+{
+    var touches = event.changedTouches,
+        first = touches[0],
+        type = "";
+    switch(event.type)
+    {
+        case "touchstart": type = "mousedown"; break;
+        case "touchmove":  type = "mousemove"; break;        
+        case "touchend":   type = "mouseup";   break;
+        default:           return;
+    }
+
+    // initMouseEvent(type, canBubble, cancelable, view, clickCount, 
+    //                screenX, screenY, clientX, clientY, ctrlKey, 
+    //                altKey, shiftKey, metaKey, button, relatedTarget);
+
+    var simulatedEvent = document.createEvent("MouseEvent");
+    simulatedEvent.initMouseEvent(type, true, true, window, 1, 
+                                  first.screenX, first.screenY, 
+                                  first.clientX, first.clientY, false, 
+                                  false, false, false, 0/*left*/, null);
+
+    first.target.dispatchEvent(simulatedEvent);
+    event.preventDefault();
+}
+
+function init() 
+{
+    document.addEventListener("touchstart", touchHandler, true);
+    document.addEventListener("touchmove", touchHandler, true);
+    document.addEventListener("touchend", touchHandler, true);
+    document.addEventListener("touchcancel", touchHandler, true);    
+}
+init();

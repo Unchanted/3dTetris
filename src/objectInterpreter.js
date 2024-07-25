@@ -42,12 +42,12 @@ function createRect(x,y,z,a,b,c,colors){
     ],
   "colors": [],
   "indices": [ 
-  [0,1,2,3],
-	[4,5,6,7],
-	[0,1,5,4],
-	[3,7,6,2],
-	[0,3,7,4],
-	[1,5,6,2] 
+  [0,1,2,3], 
+	[4,5,6,7], 
+	[0,1,5,4], 
+	[3,7,6,2], 
+	[0,3,7,4], 
+	[1,5,6,2]  
 	
   ],
   "type":"rect"
@@ -114,12 +114,12 @@ function disassemble(asset){
 	let assetVertices = asset.vertices;
 	for(var j=0;j<assetVertices.length/8;j++){
 		let obj = {"vertices":[],"indices":[ 
-											[0,1,2,3],
-											[4,5,6,7],
-											[0,1,5,4],
-											[3,7,6,2],
-											[0,3,7,4],
-											[1,5,6,2] 
+											[0,1,2,3], 
+											[4,5,6,7], 
+											[0,1,5,4], 
+											[3,7,6,2], 
+											[0,3,7,4], 
+											[1,5,6,2]  
 	
 											],"type":"rect","colors":[]};
 		obj.indices = quad(obj.indices);
