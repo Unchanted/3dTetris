@@ -20,37 +20,46 @@ var w = edge_length*w_count;
 var h = 0.05;
 var d = edge_length*h_count;
 var ground = -0.5;
+var hill = 0.7;
 var l = 0.01;
-var initialAssetCoord = [-0.2,0.7,0.2]
-var wallTransparency = 0.0;
+var initialAssetCoord = [-0.2,hill,0.2]
 var wallLength = 1.3;
 var wallPivot = 0.8;
+var wallThickness = 0.051;
+var wallColor = [0.3, 0.3, 0.8, 0.3]
+var groundCOlor = [0.3, 0.3, 0.8, 0.8]
+
 //First objects
 var initObjects = [
 	 createRect(-0.4,ground,0,
 				w,1.5*h,d,
-				[[0.3, 0.3, 0.8, 1.0]]),
+				[groundCOlor]),
 				
-				createRect(-0.5,wallPivot,0,
-				0.1,wallLength,d,
-				[[0.0, 0.0, 1.0, wallTransparency]]),
+				createRect(-0.451,wallPivot,0,
+				wallThickness,wallLength,d,
+				[wallColor]),
 				
-				createRect(-0.4,wallPivot,0-edge_length,
-				w,wallLength,0.1,
-				[[0.0, 0.0, 1.0, wallTransparency]]),
+				createRect(-0.4,wallPivot,0-edge_length/2-0.01,
+				w,wallLength,wallThickness,
+				[wallColor]),
 				
 				createRect(-0.4,wallPivot,0+d,
-				w,wallLength,0.1,
-				[[0.0, 0.0, 1.0, wallTransparency]]),
+				w,wallLength,wallThickness,
+				[wallColor]),
 				
 				createRect(-0.4+w,wallPivot,0,
-				0.1,wallLength,d,
-				[[0.0, 0.0, 1.0, wallTransparency]]),
+				wallThickness,wallLength,d,
+				[wallColor]),
+				
+				createRect(-0.4,hill+0.0051,0,
+				w,0.1*h,d,
+				[[1,1,1,1]]),
+				
 
 ]
 
 //Make invisible objects such as walls
-walls = [1,2,3,4];
+walls = [1,2,3,4,5];
 
 //Get 4 indices and generate 6 indices for cube
 function quad(indicesOriginal){

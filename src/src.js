@@ -15,10 +15,10 @@ var cameraSpeed = 4; //cameraSpeed
 
 const Y_LIMIT = initialAssetCoord[1]-edge_length; //y coordianate limit for game end condition
 const gravity_speed_init = 0.0005*prompt("Enter difficulity scale",2); //initial gravity_speed
-var gravity_speed = 0; //gravity_speed
+var gravity_speed = gravity_speed_init; //gravity_speed
 
 //For testing walls
-const DISPLAY_WALLS = true;
+const DISPLAY_WALLS = false;
 const OBJECT_DEPTH = false;
 const SPACE_SPEED = Math.max(0.02,gravity_speed_init*2);
 
@@ -179,6 +179,7 @@ function rotateS(object,dir_enum){
 		
 	}
 	
+	//Set pivot point on previous place
 	let difAfter = []
 	
 	//we need 2 points to make asset stable after rotation
@@ -229,6 +230,7 @@ function detectAndDestroy(){
 		//If plane is full, then delete all
 		if(verticesOnY.length >= w_count*h_count){
 
+			//Silinme sonrası indexler değişeceği için aşağı itmeyi ilk önce yapmalıyım
 			for(var j=1+walls.length;j<objects.length;j++){
 				//Objects at lower should not be move down
 				if(objectIndexesAtRow.includes(j) || verticesOnY.includes(j))
@@ -286,7 +288,7 @@ function createNewAsset(depth_y=OBJECT_DEPTH,connected_components=true){
 	//Random Colors
 	let colors = [] 
 	for(let i=0;i<4;i++)
-		colors.push([Math.random(),Math.random(),Math.random(),1]);
+		colors.push([Math.random(),Math.random(),Math.random(),1.0]);
 	let obj = combineCubes(blueprint,edge_length,colors,...initialAssetCoord);		
 						
 	addToScene(obj);
@@ -341,7 +343,14 @@ window.onload = function init(){
     if ( !gl ) { alert( "WebGL isn't available" ); }
     gl.viewport( 0, 0, canvas.width, canvas.height );
     gl.clearColor( 0.1,	0.04,	0.17,   1.0 );
-	gl.enable(gl.DEPTH_TEST);
+	//gl.ONE, gl.ONE_MINUS_SRC_ALPHA
+	gl.enable(gl.DEPTH_TEST)
+	if(DISPLAY_WALLS==true){
+		gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+
+		gl.enable(gl.BLEND);
+		gl.disable(gl.DEPTH_TEST);
+	}
 	program = initShaders( gl, "vertex-shader", "fragment-shader" );
     gl.useProgram( program );
 
@@ -372,12 +381,13 @@ function render(once=false){
 	
 	gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 	if(document.hasFocus()){
-		document.getElementsByTagName("body")[0].style="";
+		
 		var deltaTime = (Date.now() - prevTime)/10; //divide by 10 for normalization
 		
 		if(TimeStopTicket){
 			deltaTime ^= deltaTime;
 			TimeStopTicket = false;
+			document.getElementsByTagName("body")[0].style="";
 		}
 		if(ended==false){
 			let [CollidedObjectIndex,distance] = boxClsn(objects[objects.length-1]);
@@ -396,6 +406,7 @@ function render(once=false){
 				for(var i=0;i<objects[objects.length-1].vertices.length;i++)
 					objects[objects.length-1].vertices[i][1]+=distance;
 				
+				//Fix color when object selected by mouse
 				if(prevColors!=null){
 					objects[objects.length-1].colors = prevColors;
 					prevColors=null;
@@ -424,12 +435,14 @@ function render(once=false){
 		}
 		
 		//Render Object and Continue to loop
-		for(var i=0;i<objects.length;i++)
-			if(DISPLAY_WALLS && walls.includes(i))
+		for(var i=0;i<objects.length;i++){
+			if(DISPLAY_WALLS==false && walls.includes(i) && i!=5)
+				continue
+			if(i==5)
 				buffer(objects[i],gl.LINES)
 			else
 				buffer(objects[i]);
-				
+		}
 		
 		prevTime = Date.now();
 		
@@ -478,7 +491,7 @@ function directionFix(dir_enum){
 //Rotate Camera
 function rotateCamera(dir_enum,scale=1){
 	let index = 1 - dir_enum[0];
-	let direction = (2*index-1)*dir_enum[1]; 
+	let direction = (2*index-1)*dir_enum[1]; // 0 ise negatif, 1 ise pozitifi 
 	cameraTheta[index]=(cameraTheta[index]+direction*scale*cameraSpeed)%360;
 	gl.uniform4fv(camera_theta_loc, cameraTheta);
 }
