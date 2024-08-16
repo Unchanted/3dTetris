@@ -4,7 +4,7 @@
 
 ---
 
-[Click to play the game ](https://github.com/unchanted/3dtetris)
+Run index.html in src to play the game
 
 ---
 
