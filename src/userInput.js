@@ -115,129 +115,116 @@ window.onmousemove = function(event) {
     dragBegin.y = event.clientY;
 }
 
-//Mouse Wheel rotated
-window.addEventListener('wheel', ({ deltaY }) => {
+window.addEventListener('wheel', (event) => {
+    let mousePos = getMousePos(event);
+    cameraTheta[3] += event.deltaY / 3000;
 
-	//ZOOM
-	
-	let mousePos = getMousePos(event);
-	cameraTheta[3] += deltaY/3000;
-	
-	//IF zoomed out then get camera coordinates to normal
-	if(deltaY>0)
-		cameraCoord = [0.2,0];
-	
-	//Zoom In
-	else{
-		cameraCoord[0] += -mousePos.x;
-		cameraCoord[1] += mousePos.y;
-	}
-
-	//Update variables
-	gl.uniform2fv(cameraCoordLoc, cameraCoord);
-	gl.uniform4fv(camera_theta_loc, cameraTheta);
-});
-
-//Key pressed
-window.onkeydown = function(event) {
-	if(ended) return;
-	let key = String.fromCharCode(event.keyCode).toLowerCase();
-	
-	switch(key){
-		
-		//Camera Rotation
-		case '&': 
-			rotateCamera(directions.UP);
-			break;
-		case '%':  
-			rotateCamera(directions.LEFT);
-			break;
-		case '(': 
-			rotateCamera(directions.DOWN);
-			break;
-		case '\'': 
-			rotateCamera(directions.RIGHT);
-			break;
-			
-		//Object Rotation
-		case 'q':
-			rotateSound.play();
-			rotateS(objects[objects.length-1],directions.UP);
-			break;
-		case 'e':
-			rotateSound.play();
-			rotateS(objects[objects.length-1],directions.LEFT);
-			break;
-			
-		//Object Movement
-		case 'w':
-			moveSound.play();
-			move(objects[objects.length-1],move_scale,directionFix(directions.BEHIND));
-			break;
-		case 'a':
-		
-			moveSound.play();
-			move(objects[objects.length-1],move_scale,directionFix(directions.LEFT));
-			break;
-		case 's':
-		
-			moveSound.play();
-			move(objects[objects.length-1],move_scale,directionFix(directions.FRONT));
-			break;
-		case 'd':
-		
-			moveSound.play();
-			move(objects[objects.length-1],move_scale,directionFix(directions.RIGHT));
-			break;
-			
-		case ' ':
-			if(gravity_speed!=SPACE_SPEED)
-				fallSound.play();
-			gravity_speed = SPACE_SPEED;
-			break;
-			
-	}
-}
-
-window.onkeyup = function(){
-	let key = String.fromCharCode(event.keyCode).toLowerCase();
-	
-	switch(key){
-		case ' ':
-			gravity_speed = gravity_speed_init;
-			break;
-	}
-}
-
-function touchHandler(event)
-{
-    var touches = event.changedTouches,
-        first = touches[0],
-        type = "";
-    switch(event.type)
-    {
-        case "touchstart": type = "mousedown"; break;
-        case "touchmove":  type = "mousemove"; break;        
-        case "touchend":   type = "mouseup";   break;
-        default:           return;
+    if (event.deltaY > 0) {
+        cameraCoord = [0.2, 0];
+    } else {
+        cameraCoord[0] += -mousePos.x;
+        cameraCoord[1] += mousePos.y;
     }
 
+    gl.uniform2fv(cameraCoordLoc, cameraCoord);
+    gl.uniform4fv(camera_theta_loc, cameraTheta);
+});
 
-    var simulatedEvent = document.createEvent("MouseEvent");
-    simulatedEvent.initMouseEvent(type, true, true, window, 1, 
-                                  first.screenX, first.screenY, 
-                                  first.clientX, first.clientY, false, 
-                                  false, false, false, 0/*left*/, null);
+window.onkeydown = function(event) {
+    if (ended) return;
+    let key = String.fromCharCode(event.keyCode).toLowerCase();
 
-    first.target.dispatchEvent(simulatedEvent);
+    switch (key) {
+        case '&':
+            rotateCamera(directions.UP);
+            break;
+        case '%':
+            rotateCamera(directions.LEFT);
+            break;
+        case '(':
+            rotateCamera(directions.DOWN);
+            break;
+        case '\'':
+            rotateCamera(directions.RIGHT);
+            break;
+        case 'q':
+            rotateSound.play();
+            rotateS(objects[objects.length - 1], directions.UP);
+            break;
+        case 'e':
+            rotateSound.play();
+            rotateS(objects[objects.length - 1], directions.LEFT);
+            break;
+        case 'w':
+            moveSound.play();
+            move(objects[objects.length - 1], move_scale, directionFix(directions.BEHIND));
+            break;
+        case 'a':
+            moveSound.play();
+            move(objects[objects.length - 1], move_scale, directionFix(directions.LEFT));
+            break;
+        case 's':
+            moveSound.play();
+            move(objects[objects.length - 1], move_scale, directionFix(directions.FRONT));
+            break;
+        case 'd':
+            moveSound.play();
+            move(objects[objects.length - 1], move_scale, directionFix(directions.RIGHT));
+            break;
+        case ' ':
+            if (gravity_speed != SPACE_SPEED) fallSound.play();
+            gravity_speed = SPACE_SPEED;
+            break;
+    }
+}
+
+window.onkeyup = function(event) {
+    let key = String.fromCharCode(event.keyCode).toLowerCase();
+
+    if (key === ' ') {
+        gravity_speed = gravity_speed_init;
+    }
+}
+
+function touchHandler(event) {
+    var touches = event.changedTouches[0];
+    var type = "";
+
+    switch (event.type) {
+        case "touchstart":
+            type = "mousedown";
+            break;
+        case "touchmove":
+            type = "mousemove";
+            break;
+        case "touchend":
+            type = "mouseup";
+            break;
+        default:
+            return;
+    }
+
+    var simulatedEvent = new MouseEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+        detail: 1,
+        screenX: touches.screenX,
+        screenY: touches.screenY,
+        clientX: touches.clientX,
+        clientY: touches.clientY,
+        button: 0
+    });
+
+    touches.target.dispatchEvent(simulatedEvent);
     event.preventDefault();
 }
 
-function init() 
-{
+function init() {
     document.addEventListener("touchstart", touchHandler, true);
     document.addEventListener("touchmove", touchHandler, true);
     document.addEventListener("touchend", touchHandler, true);
-    document.addEventListener("touchcancel", touchHandler, true);    
+    document.addEventListener("touchcancel", touchHandler, true);
 }
+
 init();
