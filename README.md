@@ -11,7 +11,7 @@
 ## Screenshots
 
 <p align="center">
-  <img src="./ss/gamealpha.jpg" alt="Game Screenshot">
+  <img src="./ss/gameAlpha.jpg" alt="Game Screenshot">
   <img src="./ss/camera.gif" alt="Camera Movement">
 </p>
 
