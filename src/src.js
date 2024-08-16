@@ -1,96 +1,72 @@
 "use strict";
-var canvas;
-var gl;
-var program;
-var vColor;
-var vPosition;
 
-//Objects and Camera variables
-var objects = [] //stores all objects
-var cameraTheta = [-12,26,0,1.0]; //stores camera angles
-var cameraCoord = [0.2,0]; //stores camera coordinates
-var cameraCoordLoc;  //stores camera coordinate address on WebGL
-var camera_theta_loc; //stores camera angle address on WebGL
-var cameraSpeed = 4; //cameraSpeed
+// webgl
+let canvas, gl, program, vColor, vPosition;
 
-const Y_LIMIT = initialAssetCoord[1]-edge_length; //y coordianate limit for game end condition
-const gravity_speed_init = 0.0005*prompt("Enter difficulity scale",2); //initial gravity_speed
-var gravity_speed = gravity_speed_init; //gravity_speed
+// Game State Variables
+let objects = [];
+let cameraTheta = [-12, 26, 0, 1.0];
+let cameraCoord = [0.2, 0];
+let cameraCoordLoc, camera_theta_loc;
+const cameraSpeed = 4;
 
-//For testing walls
-var DISPLAY_WALLS = false;
-var OBJECT_DEPTH = false;
-const SPACE_SPEED = Math.max(0.02,gravity_speed_init*2);
+const Y_LIMIT = initialAssetCoord[1] - edge_length;
+const gravity_speed_init = 0.0005 * prompt("Enter difficulty scale", 2);
+let gravity_speed = gravity_speed_init;
 
-var move_scale =edge_length; //movement step size 
-var epsilon = -0.05; //for collusions
-var ended = false; //stores if game ended or not
-var prevTime = 0; //For smoothing movement
-var TimeStopTicket = false; //For time stop when game paused
-var prevVertices = null;
+const DISPLAY_WALLS = false;
+const OBJECT_DEPTH = false;
+const SPACE_SPEED = Math.max(0.02, gravity_speed_init * 2);
 
-//Enumeration for directions
+const move_scale = edge_length;
+const epsilon = -0.05;
+let ended = false;
+let prevTime = 0;
+let TimeStopTicket = false;
+let prevVertices = null;
+
+// Enums
 const directions = {
-	"RIGHT"	: [ 0,1],
-	"LEFT"	: [0,-1],
-	"UP"	: [ 1,1],
-	"DOWN" 	: [1,-1],
-	"FRONT" : [2,1],
-	"BEHIND" : [2,-1]
+    RIGHT: [0, 1],
+    LEFT: [0, -1],
+    UP: [1, 1],
+    DOWN: [1, -1],
+    FRONT: [2, 1],
+    BEHIND: [2, -1],
+};
 
+// Sounds
+let moveSound, stackSound, stackCompleteSound, rotateSound, fallSound;
+
+// Game Objects
+class Object {
+    constructor(obj) {
+        this.vertices = obj.vertices.map(vertex => [...vertex]);
+        this.colors = obj.colors.map(color => vec4(...color));
+        this.indices = obj.indices;
+        this.type = obj.type;
+    }
 }
 
-//Sounds
-var moveSound;
-var stackSound;
-var stackCompleteSound;
-var rotateSound;
-var fallSound;
-
-//Game Object
-class Object{
-	constructor(obj){
-		this.vertices = [];
-		this.colors = [];
-		for(var i=0;i<obj.vertices.length;i++){
-			this.vertices.push([0,0,0]);
-			for(var j=0;j<3;j++)
-				this.vertices[i][j] = obj.vertices[i][j];
-		}		
-		
-		for(i=0;i<obj.colors.length;i++)
-			this.colors.push(vec4(...obj.colors[i]));
-		
-		this.indices = obj.indices;
-		this.type = obj.type;
-	}
-}
-
-//Assign sound files
-function initSounds(){
-	let soundFolder = "src/soundeffects/";
-	moveSound = new Audio(soundFolder+'move.mp3');
-	stackSound = new Audio(soundFolder+"stack.mp3");
-	stackCompleteSound = new Audio(soundFolder+"stackComplete.mp3");
-	rotateSound = new Audio(soundFolder+"rotate.mp3");
-	fallSound = new Audio(soundFolder+"fall.wav");
-}
-
-//Check if 2 min max collusions
-function lineClsn(line1,line2,distance=epsilon){
-	return line1[0] < line2[1]+distance && line1[1]+distance > line2[0];
+// assign sound files
+function initSounds() {
+    const soundFolder = "src/soundeffects/";
+    moveSound = new Audio(soundFolder + 'move.mp3');
+    stackSound = new Audio(soundFolder + "stack.mp3");
+    stackCompleteSound = new Audio(soundFolder + "stackComplete.mp3");
+    rotateSound = new Audio(soundFolder + "rotate.mp3");
+    fallSound = new Audio(soundFolder + "fall.wav");
 }
 
 //Check if 2 objects collusions
-function isColliding(obj1,obj2){
-	const [X,Y,Z] = getMinMax(obj1);
-	const [x,y,z] = getMinMax(obj2);
-			
-	if(lineClsn(X,x) && lineClsn(Y,y,0) && lineClsn(Z,z))
-		return true;
-	
-	return false;
-	
+function lineClsn(line1, line2, distance = epsilon) {
+    return line1[0] < line2[1] + distance && line1[1] + distance > line2[0];
+}
+
+function isColliding(obj1, obj2) {
+    const [X, Y, Z] = getMinMax(obj1);
+    const [x, y, z] = getMinMax(obj2);
+    return lineClsn(X, x) && lineClsn(Y, y, 0) && lineClsn(Z, z);
 }
 
 //Check if game ended

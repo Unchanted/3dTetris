@@ -1,48 +1,53 @@
 <p align="center">
-  <h1 align="center">3d tetris from scratch using webgl</h1>
+  <h1 align="center">3D Tetris from Scratch Using WebGL</h1>
 </p>
 
 ---
 
-<a href="https://github.com/unchanted/3dtetris">click to play game (google chrome recommended) </a>
+[Click to play the game ](https://github.com/unchanted/3dtetris)
 
 ---
-<h2 align="center">screenshots</h2>
 
-![](./ss/gamealpha.jpg)
+## Screenshots
+
 <p align="center">
-  <img src="./ss/camera.gif">
+  <img src="./ss/gamealpha.jpg" alt="Game Screenshot">
+  <img src="./ss/camera.gif" alt="Camera Movement">
 </p>
 
-<h2 align="center">gameplay</h2>
-
-    wasd or mouse drag on object: movement
-    space: fast drop
-    q: rotate 90 degrees around the y-xis
-    e: rotate 90 degrees around the x-axis
-    mouse wheel scroll: zoom in/out to the point of cursor 
-    mouse wheel button drag: move camera position
-    arrows or mouse drag: rotate camera perspective
 ---
-<h2 align="center">options</h2>
 
-    height: changes ground's length on z-axis and changes invisible walls' location based on it 
-    width: changes ground's length on x-axis and changes invisible walls' location based on it 
-    difficulity: changes game difficulity by increasing falling speed
-    enable alpha: enables opacity and displays walls
-    object depth: enables objects that can grow along z-axis
+## Gameplay
+
+- **WASD** or **Mouse Drag on Object**: Movement
+- **Space**: Fast Drop
+- **Q**: Rotate 90 Degrees Around the Y-Axis
+- **E**: Rotate 90 Degrees Around the X-Axis
+- **Mouse Wheel Scroll**: Zoom In/Out to the Point of Cursor
+- **Mouse Wheel Button Drag**: Move Camera Position
+- **Arrow Keys** or **Mouse Drag**: Rotate Camera Perspective
+
 ---
-<h2 align="center">features</h2>
 
-    collision detection: game doesnt allow rotation or movement if object can collide after that action.
-    lighting using shaders
-    fully configurable camera perspective with mouse
-    random object generation
-    color transition based on main object's color
-    game pausing on not focusing window
-    direction fix: keyboard inputs stays accurate by fixing movement based on camera angles even after changing camera perspective
-    optimized plane scanning for detection filled x-z plane  
-    sound effects on movement, rotation, fast drop, stacking, plane destruction
-    responsive website 
-    
-  
+## Options
+
+- **Height**: Changes ground length on the Z-axis and adjusts invisible walls accordingly
+- **Width**: Changes ground length on the X-axis and adjusts invisible walls accordingly
+- **Difficulty**: Increases game difficulty by speeding up the falling blocks
+- **Enable Alpha**: Enables opacity and displays walls
+- **Object Depth**: Enables objects that can grow along the Z-axis
+
+---
+
+## Features
+
+- **Collision Detection**: Prevents rotation or movement if the object would collide after the action
+- **Lighting Using Shaders**
+- **Fully Configurable Camera Perspective with Mouse**
+- **Random Object Generation**
+- **Color Transition Based on Main Object's Color**
+- **Game Pauses When Window Loses Focus**
+- **Direction Fix**: Keeps keyboard inputs accurate by adjusting movement based on camera angles, even after changing the camera perspective
+- **Optimized Plane Scanning for Detecting Filled X-Z Planes**
+- **Sound Effects**: Triggered by movement, rotation, fast drop, stacking, and plane destruction
+- **Responsive Website**
