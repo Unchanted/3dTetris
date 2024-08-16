@@ -69,169 +69,108 @@ function isColliding(obj1, obj2) {
     return lineClsn(X, x) && lineClsn(Y, y, 0) && lineClsn(Z, z);
 }
 
+
 //Check if game ended
-function isgameEnded(){
-	//If any vertice that parsed have a vertex higher than Y_LIMIT, game finished
-	for(var j=1+walls.length;j<objects.length-1;j++){
-		for(var k=0;k<objects[j].vertices.length;k++)
-			if(objects[j].vertices[k][1]>Y_LIMIT)
-				return true;
-	}
-	return false;
-	
+function isgameEnded() {
+    return objects.slice(1 + walls.length, objects.length - 1)
+        .some(obj => obj.vertices.some(vertex => vertex[1] > Y_LIMIT));
 }
 
-//Commands that executes after game end
-function EndGame(){
-	let element = document.getElementById("score");
-	element.innerHTML="Game Over<br>Final "+element.innerHTML;
-	canvas.style="border-color: var(--background); box-shadow: 0 0 5vw black;";
+function EndGame() {
+    const element = document.getElementById("score");
+    element.innerHTML = "Game Over<br>Final " + element.innerHTML;
+    canvas.style = "border-color: var(--background); box-shadow: 0 0 5vw black;";
 }
 
-//Events when game paused
-function gamePaused(){
-	document.getElementsByTagName("body")[0].style="filter:blur(2px);";
+function gamePaused() {
+    document.getElementsByTagName("body")[0].style = "filter:blur(2px);";
 }
 
-//Check collusion for main object
-//Returns collided object's index and the overlap distance between the collusion
-function boxClsn(mainObj){
-	
-	//If object is asset, then parse it and search for a colliding part
-	if(mainObj.type=="asset"){
-		let cubes = disassemble(mainObj);
-		for(var j=0;j<cubes.length;j++){
-			let [collidingObjectIndex,distance] = boxClsn(cubes[j]);
-			if(collidingObjectIndex){
-				
-				return [collidingObjectIndex,distance];
-				
-			}
-		}
-	}
-	
-	//If object is a cube, then calculate collusion 
-	else{
-		
-		const [X,Y,Z] = getMinMax(mainObj);
-		for(var i=0;i<objects.length-1;i++){
-			let [x,y,z] = getMinMax(objects[i]);
-			if(lineClsn(X,x) && lineClsn(Y,y,0) && lineClsn(Z,z))
-				return [i+1,y[1]-Y[0]]; 
-			
-		}
-	}
-	
-	return [0,-1];
-	
+// collision detection for main object
+function boxClsn(mainObj) {
+    if (mainObj.type === "asset") {
+        const cubes = disassemble(mainObj);
+        for (let cube of cubes) {
+            const [collidingObjectIndex, distance] = boxClsn(cube);
+            if (collidingObjectIndex) return [collidingObjectIndex, distance];
+        }
+    } else {
+        const [X, Y, Z] = getMinMax(mainObj);
+        for (let i = 0; i < objects.length - 1; i++) {
+            const [x, y, z] = getMinMax(objects[i]);
+            if (lineClsn(X, x) && lineClsn(Y, y, 0) && lineClsn(Z, z))
+                return [i + 1, y[1] - Y[0]];
+        }
+    }
+    return [0, -1];
 }
 
-//Rotate main object for 90 degrees discretely
-function rotateS(object,dir_enum){
-	
-	let vertices = object.vertices;
-	let temp = copy(object.vertices);
-	let isVertical = dir_enum[0]; 
-	let direction = dir_enum[1];
-	
-	let difBefore = [];
-	let pivot = vertices[0];
-	let referans = vertices[6];
-	for(var i=0;i<3;i++)
-		difBefore.push(pivot[i]-referans[i]);
-	
+//rotate object
+function rotateS(object, dir_enum) {
+    const vertices = object.vertices;
+    const temp = copy(vertices);
+    const isVertical = dir_enum[0];
+    const direction = dir_enum[1];
 
-	for(let i=1;i<vertices.length;i++){
-		
-		let difZ = vertices[i][2]-pivot[2];
-		if(isVertical){
-			
-			let difY = vertices[i][1]-pivot[1];
-			vertices[i][1] -= direction*(difY+difZ);
-			vertices[i][2] += direction*(difY-difZ);
-		}
-		else{
-			let difX = vertices[i][0]-pivot[0];
-			vertices[i][0] += direction*(difZ+difX);
-			vertices[i][2] += direction*(difZ-difX);
-		}
-		
-	}
-	
-	//Set pivot point on previous place
-	let difAfter = []
-	
-	//we need 2 points to make asset stable after rotation
-	pivot = vertices[0];
-	referans = vertices[6];
-	for(let i=0;i<3;i++)
-		difAfter.push(pivot[i]-referans[i]);
-	
-	let extra = [0,0,0];
-	for(let i=0;i<3;i++)
-		extra[i] = (difBefore[i]-difAfter[i])/2;
-	
-	for(let i=0;i<vertices.length;i++)
-		for(let j=0;j<3;j++)
-			vertices[i][j] -= extra[j];
-	
-	
-	//If that can cause a collusion, then undo it
-	if(boxClsn(object)[0])
-		object.vertices = temp;
-	else
-		object.vertices = vertices;
-	
+    const pivot = vertices[0];
+    const referans = vertices[6];
+    const difBefore = pivot.map((coord, i) => coord - referans[i]);
+
+    vertices.slice(1).forEach((vertex, i) => {
+        const difZ = vertex[2] - pivot[2];
+        if (isVertical) {
+            const difY = vertex[1] - pivot[1];
+            vertex[1] -= direction * (difY + difZ);
+            vertex[2] += direction * (difY - difZ);
+        } else {
+            const difX = vertex[0] - pivot[0];
+            vertex[0] += direction * (difZ + difX);
+            vertex[2] += direction * (difZ - difX);
+        }
+    });
+
+    const difAfter = pivot.map((coord, i) => coord - referans[i]);
+    const extra = difBefore.map((before, i) => (before - difAfter[i]) / 2);
+    vertices.forEach(vertex => vertex.forEach((coord, i) => coord -= extra[i]));
+
+    if (boxClsn(object)[0]) object.vertices = temp;
 }
 
-//Change score
-function changeScore(delta){
-	let element = document.getElementById("score");
-	let currentScore = parseInt(element.innerText.split(" ")[1]);
-	currentScore +=delta;
-	element.innerText = "Score: "+currentScore;
-	
+// score
+function changeScore(delta) {
+    const element = document.getElementById("score");
+    const currentScore = parseInt(element.innerText.split(" ")[1]);
+    element.innerText = "Score: " + (currentScore + delta);
 }
 
-//Detect filled planes, destroy objects from plane and move everything down 
-function detectAndDestroy(){
-	
-	let objectIndexesAtRow = [];
-	//Check all planes
-	for(var i=ground+(edge_length/2);i<1;i+=edge_length){
-		let verticesOnY = [];
-		for(var j=1+walls.length;j<objects.length;j++){
-			let k = 0;
-			let y_nx = getMinMax(objects[j])[1];
-			while(k<objects[j].vertices.length && (y_nx[0]<=i && i<=y_nx[1]) ==false )
-				k++;
-			if(k<objects[j].vertices.length)
-				verticesOnY.push(j)
-		}
-		//If plane is full, then delete all
-		if(verticesOnY.length >= w_count*h_count){
+// Detect and delete filled plane
+function detectAndDestroy() {
+    const objectIndexesAtRow = [];
 
-			for(var j=1+walls.length;j<objects.length;j++){
-				//Objects at lower should not be move down
-				if(objectIndexesAtRow.includes(j) || verticesOnY.includes(j))
-					continue;
-				move(objects[j],edge_length,directions.DOWN,true);
-			}
-			
-			for(var k =verticesOnY.length-1;k>=0;k--)
-				objects.splice(verticesOnY[k],1);
+    for (let i = ground + edge_length / 2; i < 1; i += edge_length) {
+        const verticesOnY = objects.slice(1 + walls.length).reduce((acc, obj, j) => {
+            const y_nx = getMinMax(obj)[1];
+            if (obj.vertices.some(vertex => y_nx[0] <= i && i <= y_nx[1])) {
+                acc.push(j);
+            }
+            return acc;
+        }, []);
 
-			stackCompleteSound.play();
-			
-			changeScore(w_count*h_count*10);
-		}
-		else{
-			//If they wont be deleted, then they wont move down
-			objectIndexesAtRow.push(...verticesOnY);
-		}
-		
-	}
-	
+        if (verticesOnY.length >= w_count * h_count) {
+            objects.slice(1 + walls.length).forEach((obj, j) => {
+                if (!objectIndexesAtRow.includes(j) && !verticesOnY.includes(j)) {
+                    move(obj, edge_length, directions.DOWN, true);
+                }
+            });
+
+            verticesOnY.reverse().forEach(index => objects.splice(index, 1));
+
+            stackCompleteSound.play();
+            changeScore(w_count * h_count * 10);
+        } else {
+            objectIndexesAtRow.push(...verticesOnY);
+        }
+    }
 }
 
 //A Random function
