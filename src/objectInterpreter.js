@@ -1,134 +1,88 @@
-
-  /*
-	INTERPRET OBJECTS TO GENERATE A ONE EASILY
-  
-		0 --  3
-	   /|    /|
-      1 |-- 2 |
-	  |	4 --| 7
-	  |/    |/
-	  5 --  6
-	  
-	  0: minX, maxY, minZ
-	  6: maxX,minY,maxZ
-
- */
- 
- /*
- 
-								___ ___ ___
-										   |
-										   |
-										   |
- let bitMap = [ [
-				  [1, 1, 1, 0]
-				  [0, 0, 1, 0]
-								] ]
- combineCubes(bitMap,0.1,[0.2, 0.2, 0.2, 1.0],0,0,0);
- */
-
-//Create rectangle
-function createRect(x,y,z,a,b,c,colors){
-	let rect = 	{
-  "vertices": [
-        [x, y, z], 
-        [x, y, z+c],  
-        [x+a, y, z+c],   
-        [x+a, y, z],  
-		[x, y-b, z],
-        [x, y-b, z+c], 
-        [x+a, y-b, z+c],  
-        [x+a, y-b, z]  
-    ],
-  "colors": [],
-  "indices": [ 
-  [0,1,2,3], 
-	[4,5,6,7], 
-	[0,1,5,4], 
-	[3,7,6,2], 
-	[0,3,7,4], 
-	[1,5,6,2]  
-	
-  ],
-  "type":"rect"
-  }
-  for(var i=0;i<rect.vertices.length;i++)
-	  rect.colors.push(colors[(i*4)%colors.length]);
-  rect.indices = quad(rect.indices);
-  return rect;
-	
+function copy(object) {
+    return JSON.parse(JSON.stringify(object));
 }
 
-//create Cube
-function createCube(x,y,z,a,colors){return createRect(x,y,z,a,a,a,colors);}
+// Create rectangle
+function createRect(x, y, z, a, b, c, colors) {
+    const vertices = [
+        [x, y, z], [x, y, z + c], [x + a, y, z + c], [x + a, y, z],
+        [x, y - b, z], [x, y - b, z + c], [x + a, y - b, z + c], [x + a, y - b, z]
+    ];
 
-//Create a cube and map its indices for previous cube of same asset
-function createAndMap(x,y,z,a,colorArr,cubes){
-	let newCube = createCube(x,y,z,a,colorArr);
-	for(var i=0;i<newCube.indices.length;i++)
-			newCube.indices[i]+=8*cubes.length;
-	return newCube;
+    const indices = quad([
+        [0, 1, 2, 3], [4, 5, 6, 7], 
+        [0, 1, 5, 4], [3, 7, 6, 2], 
+        [0, 3, 7, 4], [1, 5, 6, 2]
+    ]);
+
+    return {
+        vertices: vertices,
+        colors: vertices.map((_, i) => colors[(i * 4) % colors.length]),
+        indices: indices,
+        type: "rect"
+    };
 }
 
-//Copy any object
-function copy(object){return JSON.parse(JSON.stringify(object));}
-
-//Combine Cubes for given blueprint (it is like [1,1,3])
-function combineCubes(blueprint,a, colorArr,initialX = 0, initialY=0, initialZ=0){
-	var cubes = new Array();
-	for(var i=0;i<blueprint.length;i++){
-		if(Array.isArray(blueprint[i])){
-			for(var j=0;j<blueprint[i].length;j++){
-					for(var k=1;k<=blueprint[i][j];k++)
-						cubes.push(createAndMap(initialX+a*j,initialY-a*i,initialZ-a*(k-1),a,colorArr,cubes))
-			}
-		}
-		else 
-			for(var k=1;k<=blueprint[i];k++)
-				cubes.push(createAndMap(initialX+a*i,initialY,initialZ-a*(k-1),a,colorArr,cubes))
-		
-	}
-	
-
-	let combinedObject = copy(cubes[0]);
-	combinedObject.vertices = combinedObject.vertices;
-	combinedObject.colors = combinedObject.colors;
-	combinedObject.type="asset";
-	
-	for(var i=1;i<cubes.length;i++){
-		for(var j=0;j<cubes[i].vertices.length;j++){
-			combinedObject.vertices.push(cubes[i].vertices[j]);
-			combinedObject.colors.push(cubes[i].colors[j]);
-		}		
-		combinedObject.indices.push(...(cubes[i].indices));
-	}
-	
-	return combinedObject;
-	
+// Create cube
+function createCube(x, y, z, a, colors) {
+    return createRect(x, y, z, a, a, a, colors);
 }
 
-//Disassemble asset to cubes
-function disassemble(asset){
-	//8 color, 6 indis, 8 vertices
-	let cubes = []
-	let assetVertices = asset.vertices;
-	for(var j=0;j<assetVertices.length/8;j++){
-		let obj = {"vertices":[],"indices":[ 
-											[0,1,2,3], 
-											[4,5,6,7], 
-											[0,1,5,4], 
-											[3,7,6,2], 
-											[0,3,7,4], 
-											[1,5,6,2]  
-	
-											],"type":"rect","colors":[]};
-		obj.indices = quad(obj.indices);
-		let begin = j*8;
-		obj.vertices = (assetVertices.slice(begin,begin+8));
-		obj.colors= (asset.colors.slice(begin,begin+8));
-		cubes.push(obj);
-	
-	}
-	return cubes;
-	
+function createAndMap(x, y, z, a, colorArr, cubes) {
+    const newCube = createCube(x, y, z, a, colorArr);
+    newCube.indices = newCube.indices.map(index => index + 8 * cubes.length);
+    return newCube;
 }
+
+function combineCubes(blueprint, a, colorArr, initialX = 0, initialY = 0, initialZ = 0) {
+    const cubes = [];
+
+    blueprint.forEach((row, i) => {
+        if (Array.isArray(row)) {
+            row.forEach((count, j) => {
+                for (let k = 1; k <= count; k++) {
+                    cubes.push(createAndMap(initialX + a * j, initialY - a * i, initialZ - a * (k - 1), a, colorArr, cubes));
+                }
+            });
+        } else {
+            for (let k = 1; k <= row; k++) {
+                cubes.push(createAndMap(initialX + a * i, initialY, initialZ - a * (k - 1), a, colorArr, cubes));
+            }
+        }
+    });
+
+    const combinedObject = copy(cubes[0]);
+    cubes.slice(1).forEach(cube => {
+        combinedObject.vertices.push(...cube.vertices);
+        combinedObject.colors.push(...cube.colors);
+        combinedObject.indices.push(...cube.indices);
+    });
+
+    combinedObject.type = "asset";
+    return combinedObject;
+}
+
+
+function disassemble(asset) {
+    const cubes = [];
+    const cubeCount = asset.vertices.length / 8;
+
+    for (let j = 0; j < cubeCount; j++) {
+        const start = j * 8;
+        const vertices = asset.vertices.slice(start, start + 8);
+        const colors = asset.colors.slice(start, start + 8);
+
+        cubes.push({
+            vertices: vertices,
+            indices: quad([
+                [0, 1, 2, 3], [4, 5, 6, 7], 
+                [0, 1, 5, 4], [3, 7, 6, 2], 
+                [0, 3, 7, 4], [1, 5, 6, 2]
+            ]),
+            colors: colors,
+            type: "rect"
+        });
+    }
+
+    return cubes;
+		       }
