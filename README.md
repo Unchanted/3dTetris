@@ -3,8 +3,9 @@
 </p>
 
 ---
+# To play
 
-Run index.html in src to play the game
+clone the repo and run index.html in src to play the game
 
 ---
 
@@ -51,3 +52,6 @@ Run index.html in src to play the game
 - **Optimized Plane Scanning for Detecting Filled X-Z Planes**
 - **Sound Effects**: Triggered by movement, rotation, fast drop, stacking, and plane destruction
 - **Responsive Website**
+
+
+Arcade31
